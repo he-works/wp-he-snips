@@ -16,6 +16,8 @@ class He_Snips_Admin {
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
         add_action( 'wp_ajax_he_snips_toggle', array( $this, 'ajax_toggle' ) );
         add_action( 'wp_ajax_he_snips_delete', array( $this, 'ajax_delete' ) );
+        add_filter( 'plugin_action_links_' . HE_SNIPS_BASENAME, array( $this, 'plugin_action_links' ) );
+        add_filter( 'plugin_row_meta',                           array( $this, 'plugin_row_meta' ), 10, 2 );
     }
 
     // =========================================================
@@ -539,5 +541,35 @@ class He_Snips_Admin {
 
         </div>
         <?php
+    }
+
+    // =========================================================
+    // 플러그인 목록 페이지 링크
+    // =========================================================
+
+    /**
+     * 플러그인 목록에서 플러그인 이름 옆 액션 링크 (왼쪽) — "설정" 바로가기 추가
+     *
+     * @param array $links
+     * @return array
+     */
+    public function plugin_action_links( $links ) {
+        $settings_link = '<a href="' . esc_url( admin_url( 'admin.php?page=he-snips' ) ) . '">설정</a>';
+        array_unshift( $links, $settings_link );
+        return $links;
+    }
+
+    /**
+     * 플러그인 목록에서 설명 행 메타 링크 (오른쪽) — "기부" 링크 추가
+     *
+     * @param array  $links
+     * @param string $file
+     * @return array
+     */
+    public function plugin_row_meta( $links, $file ) {
+        if ( HE_SNIPS_BASENAME === $file ) {
+            $links[] = '<a href="https://github.com/sponsors/he-works" target="_blank" rel="noopener noreferrer">❤ 기부</a>';
+        }
+        return $links;
     }
 }
