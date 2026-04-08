@@ -224,33 +224,34 @@
 
     // =========================================================
     // CodeMirror 폴백 초기화
-    // PHP inline script로 초기화가 안 된 경우(수정 페이지 등) 재시도
+    // PHP inline script 실패 시 window.load에서 올바른 설정값으로 재시도
     // =========================================================
     function initCodeMirrorFallback() {
-        // 이미 초기화됐으면 무시
+        var savedH = parseInt(localStorage.getItem('heSnipsEditorH') || DEFAULT_EDITOR_HEIGHT, 10);
+
+        // 이미 초기화됐으면 높이만 동기화
         if (window.heSnipsEditor) {
-            // 저장된 높이로 동기화만 해 줌
-            var savedH = parseInt(localStorage.getItem('heSnipsEditorH') || DEFAULT_EDITOR_HEIGHT, 10);
             window.heSnipsEditor.setSize(null, savedH);
             window.heSnipsEditor.refresh();
             return;
         }
 
         var $textarea = $('#he-snips-code');
-        if (!$textarea.length) return;                  // 에디터 페이지가 아님
+        if (!$textarea.length) return;                           // 에디터 페이지가 아님
         if (typeof wp === 'undefined' || !wp.codeEditor) return; // CodeMirror 미로드
 
+        // PHP에서 localize한 설정값 사용 (언어 모드 포함)
+        var settings = (typeof heSnipsCodeSettings !== 'undefined') ? heSnipsCodeSettings : {};
+
         try {
-            var editor = wp.codeEditor.initialize($textarea);
+            var editor = wp.codeEditor.initialize($textarea, settings);
             if (editor && editor.codemirror) {
                 window.heSnipsEditor = editor.codemirror;
-
-                var savedH = parseInt(localStorage.getItem('heSnipsEditorH') || DEFAULT_EDITOR_HEIGHT, 10);
                 window.heSnipsEditor.setSize(null, savedH);
                 window.heSnipsEditor.refresh();
             }
         } catch (e) {
-            // 초기화 실패 시 textarea 폴백 사용 (이미 보임)
+            // 초기화 실패 시 textarea 폴백 사용
         }
     }
 

@@ -524,6 +524,28 @@
 }
 
 /* ============================================================
+   기본 정보 패널 (헤더 바로 아래, 전체 폭)
+   ============================================================ */
+.he-snips-info-panel {
+    margin-bottom: 16px;
+}
+
+.he-snips-info-panel-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+    padding: 16px 20px !important;
+    align-items: end;
+}
+
+.he-snips-field-title,
+.he-snips-field-desc {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+/* ============================================================
    편집기 레이아웃
    ============================================================ */
 .he-snips-editor-layout {

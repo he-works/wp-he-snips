@@ -23,12 +23,10 @@ class He_Snips_Admin {
     // =========================================================
 
     public function process_save() {
-        // HE SNIPS 저장 요청이 아니면 무시
         if ( ! isset( $_POST['he_snips_save'] ) ) {
             return;
         }
 
-        // Nonce 검증
         if ( ! isset( $_POST['he_snips_nonce'] ) || ! wp_verify_nonce( $_POST['he_snips_nonce'], 'he_snips_save' ) ) {
             wp_die( '보안 검사 실패. 다시 시도해 주세요.' );
         }
@@ -58,7 +56,6 @@ class He_Snips_Admin {
             $message = 'added';
         }
 
-        // 저장 완료 후 해당 타입 탭의 목록 페이지로 이동
         wp_redirect( admin_url( 'options-general.php?page=he-snips&tab=' . $type . '&saved=' . $message ) );
         exit;
     }
@@ -121,28 +118,52 @@ class He_Snips_Admin {
         }
     }
 
+    /**
+     * CodeMirror 에디터를 로드합니다.
+     *
+     * ※ PHP 모드: 'text/x-php' (순수 PHP 모드)
+     *   'application/x-httpd-php'는 HTML+PHP 혼합 모드로,
+     *   <?php 태그 없는 순수 PHP 코드를 HTML로 인식해 색상이 나오지 않습니다.
+     */
     private function enqueue_codemirror( $type ) {
         $mode_map = array(
-            'php' => 'application/x-httpd-php',
+            'php' => 'text/x-php',
             'js'  => 'text/javascript',
             'css' => 'text/css',
         );
 
         $settings = wp_enqueue_code_editor( array(
-            'type' => $mode_map[ $type ] ?? 'text/plain',
+            'type'       => $mode_map[ $type ] ?? 'text/plain',
+            'codemirror' => array(
+                'indentUnit'        => 4,
+                'tabSize'           => 4,
+                'lineNumbers'       => true,
+                'lineWrapping'      => false,
+                'matchBrackets'     => true,
+                'autoCloseBrackets' => true,
+            ),
         ) );
 
-        if ( $settings ) {
-            wp_add_inline_script(
-                'code-editor',
-                'jQuery(function($){
-                    if (typeof wp !== "undefined" && wp.codeEditor) {
-                        var editor = wp.codeEditor.initialize($("#he-snips-code"), ' . wp_json_encode( $settings ) . ');
-                        window.heSnipsEditor = editor.codemirror;
-                    }
-                });'
-            );
+        if ( false === $settings ) {
+            return; // 사용자가 코드 에디터를 비활성화한 경우
         }
+
+        // JS 폴백 초기화에서 사용할 수 있도록 설정값을 전역 변수로 전달
+        wp_localize_script( 'he-snips-admin', 'heSnipsCodeSettings', $settings );
+
+        // CodeMirror 기본 초기화 스크립트 (code-editor 스크립트 바로 뒤에 실행)
+        $json_settings = wp_json_encode( $settings );
+        wp_add_inline_script(
+            'code-editor',
+            "jQuery(function(\$){
+                if (typeof wp !== 'undefined' && wp.codeEditor && !window.heSnipsEditor) {
+                    try {
+                        var editor = wp.codeEditor.initialize(\$('#he-snips-code'), {$json_settings});
+                        window.heSnipsEditor = editor.codemirror;
+                    } catch(e) {}
+                }
+            });"
+        );
     }
 
     // =========================================================
@@ -164,14 +185,11 @@ class He_Snips_Admin {
                 $this->render_editor_page( absint( $_GET['id'] ?? 0 ) );
                 break;
             default:
-                // 저장은 admin_init 훅의 process_save()에서 처리됨
                 $this->render_list_page();
                 break;
         }
     }
 
-    // =========================================================
-    // 저장 처리
     // =========================================================
     // Ajax: 토글
     // =========================================================
@@ -231,7 +249,6 @@ class He_Snips_Admin {
         ?>
         <div class="wrap he-snips-wrap">
 
-            <!-- 페이지 헤더 -->
             <div class="he-snips-page-header">
                 <div class="he-snips-page-header-left">
                     <div class="he-snips-logo-mark"><span>&lt;/&gt;</span></div>
@@ -259,7 +276,6 @@ class He_Snips_Admin {
                 </div>
             <?php endif; ?>
 
-            <!-- 탭 -->
             <div class="he-snips-tab-nav">
                 <?php foreach ( $tabs as $slug => $info ) : ?>
                     <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&tab=' . $slug ) ); ?>"
@@ -270,7 +286,6 @@ class He_Snips_Admin {
                 <?php endforeach; ?>
             </div>
 
-            <!-- 스니펫 목록 -->
             <div class="he-snips-card">
                 <?php if ( empty( $snippets ) ) : ?>
                     <div class="he-snips-empty">
@@ -365,7 +380,7 @@ class He_Snips_Admin {
         ?>
         <div class="wrap he-snips-wrap">
 
-            <!-- 페이지 헤더 -->
+            <!-- ① 페이지 헤더 -->
             <div class="he-snips-page-header">
                 <div class="he-snips-page-header-left">
                     <div class="he-snips-logo-mark"><span>&lt;/&gt;</span></div>
@@ -385,9 +400,30 @@ class He_Snips_Admin {
                 <?php wp_nonce_field( 'he_snips_save', 'he_snips_nonce' ); ?>
                 <input type="hidden" name="he_snips_save" value="1">
                 <input type="hidden" name="snippet_id" value="<?php echo absint( $id ); ?>">
-                <!-- 활성화 상태를 담는 hidden input (토글 버튼이 이 값을 변경) -->
                 <input type="hidden" name="active" id="he-snips-active-input" value="<?php echo $active ? '1' : '0'; ?>">
 
+                <!-- ② 기본 정보 (제목+설명): 헤더 바로 아래, 전체 폭 -->
+                <div class="he-snips-panel he-snips-info-panel">
+                    <div class="he-snips-panel-body he-snips-info-panel-body">
+                        <div class="he-snips-field he-snips-field-title">
+                            <label class="he-snips-label" for="he-snips-title">
+                                제목 <span class="he-snips-required">*</span>
+                            </label>
+                            <input type="text" id="he-snips-title" name="title" value="<?php echo $title; ?>"
+                                   class="he-snips-input" required placeholder="스니펫 이름을 입력하세요">
+                        </div>
+                        <div class="he-snips-field he-snips-field-desc">
+                            <label class="he-snips-label" for="he-snips-description">
+                                설명 <span class="he-snips-optional">(선택)</span>
+                            </label>
+                            <input type="text" id="he-snips-description" name="description"
+                                   value="<?php echo esc_attr( $snippet ? $snippet->description : '' ); ?>"
+                                   class="he-snips-input" placeholder="이 스니펫이 무엇을 하는지 설명하세요">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ③ 에디터 + 사이드바 (2컬럼) -->
                 <div class="he-snips-editor-layout">
 
                     <!-- 왼쪽: 코드 에디터 -->
@@ -434,28 +470,7 @@ class He_Snips_Admin {
                             </div>
                         </div>
 
-                        <!-- 2. 기본 정보 (제목 + 설명) -->
-                        <div class="he-snips-panel">
-                            <div class="he-snips-panel-header">
-                                <span class="he-snips-panel-title">기본 정보</span>
-                            </div>
-                            <div class="he-snips-panel-body">
-                                <div class="he-snips-field">
-                                    <label class="he-snips-label" for="he-snips-title">
-                                        제목 <span class="he-snips-required">*</span>
-                                    </label>
-                                    <input type="text" id="he-snips-title" name="title" value="<?php echo $title; ?>"
-                                           class="he-snips-input" required placeholder="스니펫 이름을 입력하세요">
-                                </div>
-                                <div class="he-snips-field">
-                                    <label class="he-snips-label" for="he-snips-description">설명 <span class="he-snips-optional">(선택)</span></label>
-                                    <textarea id="he-snips-description" name="description" class="he-snips-input he-snips-textarea"
-                                              rows="3" placeholder="이 스니펫이 무엇을 하는지 설명하세요"><?php echo $description; ?></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 3. JavaScript 삽입 위치 (JS 타입일 때만) -->
+                        <!-- 2. JavaScript 삽입 위치 (JS 타입일 때만) -->
                         <div class="he-snips-panel" id="he-snips-js-position-box" <?php echo $type !== 'js' ? 'style="display:none;"' : ''; ?>>
                             <div class="he-snips-panel-header">
                                 <span class="he-snips-panel-title">삽입 위치</span>
@@ -478,13 +493,12 @@ class He_Snips_Admin {
                             </div>
                         </div>
 
-                        <!-- 4. 저장 -->
+                        <!-- 3. 저장 -->
                         <div class="he-snips-panel">
                             <div class="he-snips-panel-header">
                                 <span class="he-snips-panel-title">저장</span>
                             </div>
                             <div class="he-snips-panel-body">
-                                <!-- 활성화 토글 버튼 -->
                                 <div class="he-snips-active-row">
                                     <span class="he-snips-active-label-text">활성화</span>
                                     <button type="button"
