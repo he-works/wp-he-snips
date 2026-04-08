@@ -10,6 +10,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class He_Snips_Snippets {
 
+    /**
+     * 요청당 1회 DB 조회를 위한 정적 캐시 (#4)
+     * 키 형식: "{type}" 또는 "{type}:{position}"
+     *
+     * @var array
+     */
+    private static $cache = array();
+
     // =========================================================
     // CRUD 메서드 (데이터베이스 조작)
     // =========================================================
@@ -26,15 +34,15 @@ class He_Snips_Snippets {
 
         if ( $type ) {
             return $wpdb->get_results(
-                $wpdb->prepare( "SELECT * FROM $table WHERE type = %s ORDER BY id DESC", $type ) // phpcs:ignore
+                $wpdb->prepare( "SELECT * FROM {$table} WHERE type = %s ORDER BY id DESC", $type ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             );
         }
 
-        return $wpdb->get_results( "SELECT * FROM $table ORDER BY id DESC" ); // phpcs:ignore
+        return $wpdb->get_results( "SELECT * FROM {$table} ORDER BY id DESC" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
     }
 
     /**
-     * 활성화된 스니펫만 가져옵니다.
+     * 활성화된 스니펫만 가져옵니다. (요청당 1회 정적 캐시 적용, #4)
      *
      * @param string      $type      'php', 'js', 'css'
      * @param string|null $position  JS의 경우 'header' 또는 'footer'
@@ -42,24 +50,32 @@ class He_Snips_Snippets {
      */
     public static function get_active( $type, $position = null ) {
         global $wpdb;
-        $table = He_Snips_Database::get_table_name();
+        $table     = He_Snips_Database::get_table_name();
+        $cache_key = $position ? "{$type}:{$position}" : $type;
+
+        if ( isset( self::$cache[ $cache_key ] ) ) {
+            return self::$cache[ $cache_key ];
+        }
 
         if ( $position && $type === 'js' ) {
-            return $wpdb->get_results(
+            $results = $wpdb->get_results(
                 $wpdb->prepare(
-                    "SELECT * FROM $table WHERE type = %s AND js_position = %s AND active = 1 ORDER BY id ASC", // phpcs:ignore
+                    "SELECT * FROM {$table} WHERE type = %s AND js_position = %s AND active = 1 ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
                     $type,
                     $position
                 )
             );
+        } else {
+            $results = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM {$table} WHERE type = %s AND active = 1 ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                    $type
+                )
+            );
         }
 
-        return $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM $table WHERE type = %s AND active = 1 ORDER BY id ASC", // phpcs:ignore
-                $type
-            )
-        );
+        self::$cache[ $cache_key ] = $results;
+        return $results;
     }
 
     /**
@@ -73,7 +89,7 @@ class He_Snips_Snippets {
         $table = He_Snips_Database::get_table_name();
 
         return $wpdb->get_row(
-            $wpdb->prepare( "SELECT * FROM $table WHERE id = %d", absint( $id ) ) // phpcs:ignore
+            $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", absint( $id ) ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         );
     }
 
@@ -94,7 +110,7 @@ class He_Snips_Snippets {
                 'description' => sanitize_textarea_field( $data['description'] ?? '' ),
                 'code'        => $data['code'],  // 코드는 sanitize 하지 않음 (의도된 코드)
                 'type'        => in_array( $data['type'], array( 'php', 'js', 'css' ), true ) ? $data['type'] : 'php',
-                'js_position' => in_array( $data['js_position'] ?? 'footer', array( 'header', 'footer' ), true ) ? $data['js_position'] : 'footer',
+                'js_position' => in_array( $data['js_position'] ?? 'footer', array( 'header', 'footer' ), true ) ? ( $data['js_position'] ?? 'footer' ) : 'footer',
                 'active'      => ! empty( $data['active'] ) ? 1 : 0,
             ),
             array( '%s', '%s', '%s', '%s', '%s', '%d' )
@@ -104,7 +120,7 @@ class He_Snips_Snippets {
     }
 
     /**
-     * 기존 스니펫을 수정합니다.
+     * 기존 스니펫을 수정합니다. (#7: 서버측 타입 변경 방어)
      *
      * @param int   $id
      * @param array $data
@@ -114,14 +130,20 @@ class He_Snips_Snippets {
         global $wpdb;
         $table = He_Snips_Database::get_table_name();
 
+        // #7: 기존 스니펫의 타입을 서버에서 다시 읽어 강제 유지
+        $existing = self::get_one( $id );
+        $safe_type = ( $existing && in_array( $existing->type, array( 'php', 'js', 'css' ), true ) )
+            ? $existing->type
+            : ( in_array( $data['type'] ?? '', array( 'php', 'js', 'css' ), true ) ? $data['type'] : 'php' );
+
         $result = $wpdb->update(
             $table,
             array(
                 'title'       => sanitize_text_field( $data['title'] ),
                 'description' => sanitize_textarea_field( $data['description'] ?? '' ),
                 'code'        => $data['code'],
-                'type'        => in_array( $data['type'], array( 'php', 'js', 'css' ), true ) ? $data['type'] : 'php',
-                'js_position' => in_array( $data['js_position'] ?? 'footer', array( 'header', 'footer' ), true ) ? $data['js_position'] : 'footer',
+                'type'        => $safe_type,
+                'js_position' => in_array( $data['js_position'] ?? 'footer', array( 'header', 'footer' ), true ) ? ( $data['js_position'] ?? 'footer' ) : 'footer',
                 'active'      => ! empty( $data['active'] ) ? 1 : 0,
             ),
             array( 'id' => absint( $id ) ),
@@ -183,21 +205,15 @@ class He_Snips_Snippets {
      * 워드프레스 훅에 스니펫 실행 로직을 등록합니다.
      */
     public function run() {
-        // PHP 스니펫: 가능한 빠른 시점에 실행 (init 훅)
-        add_action( 'init', array( $this, 'execute_php_snippets' ), 1 );
-
-        // JS 스니펫 (헤더): wp_head 바로 앞
-        add_action( 'wp_head', array( $this, 'output_js_header_snippets' ), 999 );
-
-        // JS 스니펫 (푸터): wp_footer 가장 마지막
+        add_action( 'init',      array( $this, 'execute_php_snippets' ),    1 );
+        add_action( 'wp_head',   array( $this, 'output_js_header_snippets' ), 999 );
         add_action( 'wp_footer', array( $this, 'output_js_footer_snippets' ), 999 );
-
-        // CSS 스니펫: wp_head에 삽입
-        add_action( 'wp_head', array( $this, 'output_css_snippets' ), 998 );
+        add_action( 'wp_head',   array( $this, 'output_css_snippets' ),      998 );
     }
 
     /**
      * 활성화된 PHP 스니펫을 실행합니다.
+     * #3: ParseError뿐 아니라 모든 Throwable(런타임 에러 포함) 처리
      */
     public function execute_php_snippets() {
         $snippets = self::get_active( 'php' );
@@ -206,16 +222,19 @@ class He_Snips_Snippets {
             try {
                 // phpcs:ignore Squiz.PHP.Eval.Discouraged
                 eval( $snippet->code );
-            } catch ( ParseError $e ) {
-                // 관리자에게만 오류 표시
+            } catch ( \Throwable $e ) {
+                // ParseError, TypeError, Error 등 모든 에러를 잡아 사이트 다운 방지
                 if ( current_user_can( 'manage_options' ) ) {
-                    add_action( 'admin_notices', function() use ( $snippet, $e ) {
+                    $title   = esc_html( $snippet->title );
+                    $message = esc_html( $e->getMessage() );
+                    add_action( 'admin_notices', function() use ( $title, $message ) {
                         echo '<div class="notice notice-error"><p>';
-                        echo '<strong>He Snips 오류</strong> - 스니펫 "' . esc_html( $snippet->title ) . '" 실행 실패: ';
-                        echo esc_html( $e->getMessage() );
+                        echo '<strong>HE SNIPS 오류</strong> — 스니펫 "' . $title . '" 실행 실패: ' . $message;
                         echo '</p></div>';
                     } );
                 }
+                // 오류 로그에도 기록
+                error_log( sprintf( '[HE SNIPS] Snippet "%s" failed: %s', $snippet->title, $e->getMessage() ) );
             }
         }
     }
@@ -224,16 +243,14 @@ class He_Snips_Snippets {
      * JS 스니펫 (헤더 위치)을 출력합니다.
      */
     public function output_js_header_snippets() {
-        $snippets = self::get_active( 'js', 'header' );
-        $this->output_inline_scripts( $snippets );
+        $this->output_inline_scripts( self::get_active( 'js', 'header' ) );
     }
 
     /**
      * JS 스니펫 (푸터 위치)을 출력합니다.
      */
     public function output_js_footer_snippets() {
-        $snippets = self::get_active( 'js', 'footer' );
-        $this->output_inline_scripts( $snippets );
+        $this->output_inline_scripts( self::get_active( 'js', 'footer' ) );
     }
 
     /**
@@ -248,7 +265,7 @@ class He_Snips_Snippets {
 
         foreach ( $snippets as $snippet ) {
             echo "\n<script id=\"he-snips-js-" . absint( $snippet->id ) . "\">\n";
-            echo $snippet->code . "\n"; // phpcs:ignore
+            echo $snippet->code . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             echo "</script>\n";
         }
     }
@@ -265,8 +282,8 @@ class He_Snips_Snippets {
 
         echo "\n<style id=\"he-snips-css\">\n";
         foreach ( $snippets as $snippet ) {
-            echo "/* Snippet: " . esc_html( $snippet->title ) . " */\n";
-            echo $snippet->code . "\n"; // phpcs:ignore
+            echo '/* ' . esc_html( $snippet->title ) . " */\n";
+            echo $snippet->code . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         }
         echo "</style>\n";
     }

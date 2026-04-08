@@ -27,7 +27,8 @@ class He_Snips_Admin {
             return;
         }
 
-        if ( ! isset( $_POST['he_snips_nonce'] ) || ! wp_verify_nonce( $_POST['he_snips_nonce'], 'he_snips_save' ) ) {
+        // #2: wp_verify_nonce 에 wp_unslash 적용 (WPCS 권장)
+        if ( ! isset( $_POST['he_snips_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['he_snips_nonce'] ), 'he_snips_save' ) ) {
             wp_die( '보안 검사 실패. 다시 시도해 주세요.' );
         }
 
@@ -35,15 +36,16 @@ class He_Snips_Admin {
             wp_die( '접근 권한이 없습니다.' );
         }
 
-        $type = sanitize_key( $_POST['type'] ?? 'php' );
+        // #6: $_POST 값에 wp_unslash 적용
+        $type = sanitize_key( wp_unslash( $_POST['type'] ?? 'php' ) );
 
         $data = array(
-            'title'       => sanitize_text_field( $_POST['title'] ?? '' ),
-            'description' => sanitize_textarea_field( $_POST['description'] ?? '' ),
+            'title'       => sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) ),
+            'description' => sanitize_textarea_field( wp_unslash( $_POST['description'] ?? '' ) ),
             'code'        => wp_unslash( $_POST['code'] ?? '' ),
             'type'        => $type,
-            'js_position' => sanitize_key( $_POST['js_position'] ?? 'footer' ),
-            'active'      => ( isset( $_POST['active'] ) && $_POST['active'] === '1' ) ? 1 : 0,
+            'js_position' => sanitize_key( wp_unslash( $_POST['js_position'] ?? 'footer' ) ),
+            'active'      => ( isset( $_POST['active'] ) && wp_unslash( $_POST['active'] ) === '1' ) ? 1 : 0,
         );
 
         $id = absint( $_POST['snippet_id'] ?? 0 );
@@ -56,7 +58,7 @@ class He_Snips_Admin {
             $message = 'added';
         }
 
-        wp_redirect( admin_url( 'options-general.php?page=he-snips&tab=' . $type . '&saved=' . $message ) );
+        wp_redirect( admin_url( 'admin.php?page=he-snips&tab=' . $type . '&saved=' . $message ) );
         exit;
     }
 
@@ -113,11 +115,12 @@ class He_Snips_Admin {
             'deleteMsg' => '이 스니펫을 정말 삭제하시겠습니까?',
         ) );
 
-        if ( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'add', 'edit' ), true ) ) {
-            $type = isset( $_GET['type'] ) ? sanitize_key( $_GET['type'] ) : 'php';
+        // #6: $_GET 값에도 wp_unslash 적용
+        if ( isset( $_GET['action'] ) && in_array( sanitize_key( wp_unslash( $_GET['action'] ) ), array( 'add', 'edit' ), true ) ) {
+            $type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : 'php';
 
             if ( isset( $_GET['id'] ) ) {
-                $snippet = He_Snips_Snippets::get_one( absint( $_GET['id'] ) );
+                $snippet = He_Snips_Snippets::get_one( absint( wp_unslash( $_GET['id'] ) ) );
                 if ( $snippet ) {
                     $type = $snippet->type;
                 }
@@ -184,7 +187,7 @@ class He_Snips_Admin {
             wp_die( '접근 권한이 없습니다.' );
         }
 
-        $action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : 'list';
+        $action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : 'list';
 
         switch ( $action ) {
             case 'add':
@@ -247,14 +250,15 @@ class He_Snips_Admin {
     // =========================================================
 
     private function render_list_page() {
-        $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'php';
+        // #6: $_GET unslash
+        $active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'php';
         $tabs = array(
             'php' => array( 'label' => 'PHP',        'hint' => 'functions.php 역할' ),
             'js'  => array( 'label' => 'JavaScript',  'hint' => '헤더·푸터에 삽입' ),
             'css' => array( 'label' => 'CSS',         'hint' => '전체 스타일 적용' ),
         );
         $snippets = He_Snips_Snippets::get_all( $active_tab );
-        $saved    = isset( $_GET['saved'] ) ? sanitize_key( $_GET['saved'] ) : '';
+        $saved    = isset( $_GET['saved'] ) ? sanitize_key( wp_unslash( $_GET['saved'] ) ) : '';
         ?>
         <div class="wrap he-snips-wrap">
 
@@ -266,7 +270,7 @@ class He_Snips_Admin {
                         <p class="he-snips-page-subtitle">코드 스니펫 관리자</p>
                     </div>
                 </div>
-                <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
                    class="he-snips-btn he-snips-btn-primary">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     새 스니펫 추가
@@ -287,7 +291,7 @@ class He_Snips_Admin {
 
             <div class="he-snips-tab-nav">
                 <?php foreach ( $tabs as $slug => $info ) : ?>
-                    <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&tab=' . $slug ) ); ?>"
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&tab=' . $slug ) ); ?>"
                        class="he-snips-tab <?php echo $active_tab === $slug ? 'is-active' : ''; ?>">
                         <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
                         <span class="he-snips-tab-hint"><?php echo esc_html( $info['hint'] ); ?></span>
@@ -303,7 +307,7 @@ class He_Snips_Admin {
                         </div>
                         <p class="he-snips-empty-title">스니펫이 없습니다</p>
                         <p class="he-snips-empty-desc">첫 번째 스니펫을 추가해서 시작해 보세요.</p>
-                        <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
+                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
                            class="he-snips-btn he-snips-btn-primary">
                             + 새 스니펫 추가
                         </a>
@@ -336,7 +340,7 @@ class He_Snips_Admin {
                                         <span class="he-snips-label-current"><?php echo $snippet->active ? '활성' : '비활성'; ?></span>
                                         <span class="he-snips-label-hover"><?php echo $snippet->active ? '비활성으로' : '활성으로'; ?></span>
                                     </button>
-                                    <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=edit&id=' . $snippet->id ) ); ?>"
+                                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=edit&id=' . $snippet->id ) ); ?>"
                                        class="he-snips-btn he-snips-btn-ghost he-snips-btn-sm">
                                         수정
                                     </a>
@@ -364,7 +368,8 @@ class He_Snips_Admin {
     private function render_editor_page( $id = 0 ) {
         $snippet  = null;
         $is_edit  = false;
-        $type     = isset( $_GET['type'] ) ? sanitize_key( $_GET['type'] ) : 'php';
+        // #6: $_GET unslash
+        $type     = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : 'php';
 
         if ( $id > 0 ) {
             $snippet = He_Snips_Snippets::get_one( $id );
@@ -375,11 +380,12 @@ class He_Snips_Admin {
             $type    = $snippet->type;
         }
 
-        $title       = $snippet ? esc_attr( $snippet->title )           : '';
-        $description = $snippet ? esc_textarea( $snippet->description ) : '';
-        $code        = $snippet ? $snippet->code                         : '';
-        $active      = $snippet ? (bool) $snippet->active               : true;
-        $js_position = $snippet ? $snippet->js_position                  : 'footer';
+        // #5: escape-on-output 원칙 — 출력 직전에 이스케이프 (변수에 미리 담아두지 않음)
+        $title       = $snippet ? $snippet->title       : '';
+        $description = $snippet ? $snippet->description : '';
+        $code        = $snippet ? $snippet->code        : '';
+        $active      = $snippet ? (bool) $snippet->active : true;
+        $js_position = $snippet ? $snippet->js_position  : 'footer';
 
         $type_hints = array(
             'php' => '&lt;?php 태그 없이 PHP 코드만 입력하세요. functions.php에 추가하는 것과 동일하게 동작합니다.',
@@ -398,14 +404,14 @@ class He_Snips_Admin {
                         <p class="he-snips-page-subtitle"><?php echo $is_edit ? '스니펫 수정' : '새 스니펫 추가'; ?></p>
                     </div>
                 </div>
-                <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&tab=' . $type ) ); ?>"
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&tab=' . $type ) ); ?>"
                    class="he-snips-btn he-snips-btn-ghost">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                     목록으로
                 </a>
             </div>
 
-            <form method="post" action="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips' ) ); ?>" id="he-snips-editor-form">
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=he-snips' ) ); ?>" id="he-snips-editor-form">
                 <?php wp_nonce_field( 'he_snips_save', 'he_snips_nonce' ); ?>
                 <input type="hidden" name="he_snips_save" value="1">
                 <input type="hidden" name="snippet_id" value="<?php echo absint( $id ); ?>">
@@ -418,7 +424,7 @@ class He_Snips_Admin {
                             <label class="he-snips-label" for="he-snips-title">
                                 제목 <span class="he-snips-required">*</span>
                             </label>
-                            <input type="text" id="he-snips-title" name="title" value="<?php echo $title; ?>"
+                            <input type="text" id="he-snips-title" name="title" value="<?php echo esc_attr( $title ); ?>"
                                    class="he-snips-input" required placeholder="스니펫 이름을 입력하세요">
                         </div>
                         <div class="he-snips-field he-snips-field-desc">
@@ -428,7 +434,7 @@ class He_Snips_Admin {
                             <textarea id="he-snips-description" name="description"
                                       class="he-snips-input he-snips-textarea"
                                       rows="2"
-                                      placeholder="이 스니펫이 무엇을 하는지 설명하세요"><?php echo $description; ?></textarea>
+                                      placeholder="이 스니펫이 무엇을 하는지 설명하세요"><?php echo esc_textarea( $description ); ?></textarea>
                         </div>
                     </div>
                 </div>
