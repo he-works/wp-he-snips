@@ -17,11 +17,16 @@
         initEditorResize();
     });
 
+    // CodeMirror 폴백: DOM ready 이후에도 미초기화된 경우 window.load에서 재시도
+    $(window).on('load', function () {
+        initCodeMirrorFallback();
+    });
+
     // =========================================================
-    // 목록 페이지: 활성화/비활성화 토글 스위치 (Ajax)
+    // 목록 페이지: 알약 토글 버튼 (Ajax)
     // =========================================================
     function initListToggle() {
-        $(document).on('click', '.he-snips-snippet-item .he-snips-toggle-btn', function (e) {
+        $(document).on('click', '.he-snips-pill-toggle', function (e) {
             e.preventDefault();
 
             var $btn  = $(this);
@@ -42,7 +47,7 @@
                 success: function (res) {
                     if (res.success) {
                         var isActive = res.data.active === 1;
-                        setToggleState($btn, isActive);
+                        setPillState($btn, isActive);
                         $item.toggleClass('is-active',   isActive);
                         $item.toggleClass('is-inactive', !isActive);
                     } else {
@@ -57,6 +62,18 @@
                 }
             });
         });
+    }
+
+    /**
+     * 알약 토글 버튼 상태 적용
+     * - label-current: 현재 상태 텍스트 (기본 보임)
+     * - label-hover:   호버 시 보이는 반대 상태 텍스트
+     */
+    function setPillState($btn, isActive) {
+        $btn.toggleClass('is-on',  isActive);
+        $btn.toggleClass('is-off', !isActive);
+        $btn.find('.he-snips-label-current').text(isActive ? '활성'    : '비활성');
+        $btn.find('.he-snips-label-hover').text(  isActive ? '비활성으로' : '활성으로');
     }
 
     // =========================================================
@@ -108,11 +125,9 @@
     // =========================================================
     function initTypeSelector() {
         $(document).on('change', 'input[name="type"]', function () {
-            // 선택 스타일
             $('.he-snips-type-option').removeClass('is-selected');
             $(this).closest('.he-snips-type-option').addClass('is-selected');
 
-            // JS 위치 패널 표시/숨김
             if ($(this).val() === 'js') {
                 $('#he-snips-js-position-box').slideDown(180);
             } else {
@@ -132,17 +147,16 @@
     }
 
     // =========================================================
-    // 편집기 페이지: 활성화 토글 버튼 (hidden input 값 연동)
+    // 편집기 페이지: 활성화 슬라이드 토글 (저장 패널)
     // =========================================================
     function initEditorActiveBtn() {
         $('#he-snips-active-btn').on('click', function () {
-            var $btn   = $(this);
+            var $btn    = $(this);
             var isNowOn = $btn.hasClass('is-on');
 
-            // 상태 반전
-            setToggleState($btn, !isNowOn);
-
-            // hidden input 값 업데이트
+            $btn.toggleClass('is-on',  !isNowOn);
+            $btn.toggleClass('is-off',  isNowOn);
+            $btn.find('.he-snips-toggle-label').text(isNowOn ? '비활성' : '활성');
             $('#he-snips-active-input').val(isNowOn ? '0' : '1');
         });
     }
@@ -154,24 +168,18 @@
         var $handle = $('.he-snips-resize-handle');
         if (!$handle.length) return;
 
-        var $body   = $('.he-snips-editor-body');
-        var MIN_H   = 200;
-        var MAX_H   = 1200;
+        var $body = $('.he-snips-editor-body');
+        var MIN_H = 200;
+        var MAX_H = 1200;
         var startY, startH;
 
-        // 저장된 높이 복원 (localStorage 사용)
+        // 저장된 높이 복원
         var savedH = localStorage.getItem('heSnipsEditorH');
-        if (savedH) {
-            applyHeight(parseInt(savedH, 10));
-        } else {
-            applyHeight(DEFAULT_EDITOR_HEIGHT);
-        }
+        applyHeight(savedH ? parseInt(savedH, 10) : DEFAULT_EDITOR_HEIGHT);
 
         $handle.on('mousedown', function (e) {
             startY = e.pageY;
             startH = $body.outerHeight();
-
-            // 드래그 중 텍스트 선택 방지
             $('body').addClass('he-snips-resizing');
 
             $(document).on('mousemove.hsResize', function (e) {
@@ -182,14 +190,13 @@
             $(document).on('mouseup.hsResize', function () {
                 $(document).off('.hsResize');
                 $('body').removeClass('he-snips-resizing');
-                // 높이 저장
                 localStorage.setItem('heSnipsEditorH', $body.outerHeight());
             });
 
             e.preventDefault();
         });
 
-        // 터치 지원 (태블릿)
+        // 터치 지원
         $handle.on('touchstart', function (e) {
             startY = e.originalEvent.touches[0].pageY;
             startH = $body.outerHeight();
@@ -208,7 +215,6 @@
 
         function applyHeight(h) {
             $body.css('height', h + 'px');
-            // CodeMirror 인스턴스가 있으면 동기화
             if (window.heSnipsEditor) {
                 window.heSnipsEditor.setSize(null, h);
                 window.heSnipsEditor.refresh();
@@ -217,13 +223,35 @@
     }
 
     // =========================================================
-    // 공통: 토글 버튼 상태 적용 헬퍼
+    // CodeMirror 폴백 초기화
+    // PHP inline script로 초기화가 안 된 경우(수정 페이지 등) 재시도
     // =========================================================
-    function setToggleState($btn, isActive) {
-        $btn.toggleClass('is-on',  isActive);
-        $btn.toggleClass('is-off', !isActive);
-        $btn.find('.he-snips-toggle-label').text(isActive ? '활성' : '비활성');
-        $btn.attr('title', isActive ? '클릭하여 비활성화' : '클릭하여 활성화');
+    function initCodeMirrorFallback() {
+        // 이미 초기화됐으면 무시
+        if (window.heSnipsEditor) {
+            // 저장된 높이로 동기화만 해 줌
+            var savedH = parseInt(localStorage.getItem('heSnipsEditorH') || DEFAULT_EDITOR_HEIGHT, 10);
+            window.heSnipsEditor.setSize(null, savedH);
+            window.heSnipsEditor.refresh();
+            return;
+        }
+
+        var $textarea = $('#he-snips-code');
+        if (!$textarea.length) return;                  // 에디터 페이지가 아님
+        if (typeof wp === 'undefined' || !wp.codeEditor) return; // CodeMirror 미로드
+
+        try {
+            var editor = wp.codeEditor.initialize($textarea);
+            if (editor && editor.codemirror) {
+                window.heSnipsEditor = editor.codemirror;
+
+                var savedH = parseInt(localStorage.getItem('heSnipsEditorH') || DEFAULT_EDITOR_HEIGHT, 10);
+                window.heSnipsEditor.setSize(null, savedH);
+                window.heSnipsEditor.refresh();
+            }
+        } catch (e) {
+            // 초기화 실패 시 textarea 폴백 사용 (이미 보임)
+        }
     }
 
 })(jQuery);

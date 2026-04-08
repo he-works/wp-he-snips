@@ -378,7 +378,59 @@
 }
 
 /* ============================================================
-   토글 스위치
+   목록 페이지: 알약(pill) 형태 토글 버튼
+   ============================================================ */
+.he-snips-pill-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 11px;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    min-width: 56px;
+    transition: all var(--hs-transition);
+    white-space: nowrap;
+}
+
+/* 활성 상태 — 초록 pill */
+.he-snips-pill-toggle.is-on {
+    background: var(--hs-green-light);
+    color: #166534;
+    border-color: #BBF7D0;
+}
+
+/* 비활성 상태 — 회색 pill */
+.he-snips-pill-toggle.is-off {
+    background: var(--hs-gray-100);
+    color: var(--hs-gray-500);
+    border-color: var(--hs-gray-200);
+}
+
+/* 호버: 반대 라벨 표시 */
+.he-snips-label-hover { display: none; }
+
+.he-snips-pill-toggle:hover .he-snips-label-current { display: none; }
+.he-snips-pill-toggle:hover .he-snips-label-hover   { display: inline; }
+
+/* 호버 시 반대 색상으로 변경 (클릭하면 이 상태가 될 것임을 암시) */
+.he-snips-pill-toggle.is-on:hover {
+    background: var(--hs-red-light);
+    color: #991B1B;
+    border-color: #FECACA;
+}
+
+.he-snips-pill-toggle.is-off:hover {
+    background: var(--hs-green-light);
+    color: #166534;
+    border-color: #BBF7D0;
+}
+
+/* ============================================================
+   에디터 저장 패널: 슬라이더 토글 스위치
    ============================================================ */
 .he-snips-toggle-btn {
     display: inline-flex;

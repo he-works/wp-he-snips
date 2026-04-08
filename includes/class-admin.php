@@ -11,10 +11,56 @@ if ( ! defined( 'ABSPATH' ) ) {
 class He_Snips_Admin {
 
     public function __construct() {
+        add_action( 'admin_init',            array( $this, 'process_save' ) );   // 헤더 전송 전에 저장 처리
         add_action( 'admin_menu',            array( $this, 'register_menu' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
         add_action( 'wp_ajax_he_snips_toggle', array( $this, 'ajax_toggle' ) );
         add_action( 'wp_ajax_he_snips_delete', array( $this, 'ajax_delete' ) );
+    }
+
+    // =========================================================
+    // 저장 처리 (admin_init: 헤더 전송 전이라 wp_redirect 정상 동작)
+    // =========================================================
+
+    public function process_save() {
+        // HE SNIPS 저장 요청이 아니면 무시
+        if ( ! isset( $_POST['he_snips_save'] ) ) {
+            return;
+        }
+
+        // Nonce 검증
+        if ( ! isset( $_POST['he_snips_nonce'] ) || ! wp_verify_nonce( $_POST['he_snips_nonce'], 'he_snips_save' ) ) {
+            wp_die( '보안 검사 실패. 다시 시도해 주세요.' );
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( '접근 권한이 없습니다.' );
+        }
+
+        $type = sanitize_key( $_POST['type'] ?? 'php' );
+
+        $data = array(
+            'title'       => sanitize_text_field( $_POST['title'] ?? '' ),
+            'description' => sanitize_textarea_field( $_POST['description'] ?? '' ),
+            'code'        => wp_unslash( $_POST['code'] ?? '' ),
+            'type'        => $type,
+            'js_position' => sanitize_key( $_POST['js_position'] ?? 'footer' ),
+            'active'      => ( isset( $_POST['active'] ) && $_POST['active'] === '1' ) ? 1 : 0,
+        );
+
+        $id = absint( $_POST['snippet_id'] ?? 0 );
+
+        if ( $id > 0 ) {
+            He_Snips_Snippets::update( $id, $data );
+            $message = 'updated';
+        } else {
+            He_Snips_Snippets::insert( $data );
+            $message = 'added';
+        }
+
+        // 저장 완료 후 해당 타입 탭의 목록 페이지로 이동
+        wp_redirect( admin_url( 'options-general.php?page=he-snips&tab=' . $type . '&saved=' . $message ) );
+        exit;
     }
 
     // =========================================================
@@ -118,9 +164,7 @@ class He_Snips_Admin {
                 $this->render_editor_page( absint( $_GET['id'] ?? 0 ) );
                 break;
             default:
-                if ( isset( $_POST['he_snips_save'] ) ) {
-                    $this->handle_save();
-                }
+                // 저장은 admin_init 훅의 process_save()에서 처리됨
                 $this->render_list_page();
                 break;
         }
@@ -128,40 +172,6 @@ class He_Snips_Admin {
 
     // =========================================================
     // 저장 처리
-    // =========================================================
-
-    private function handle_save() {
-        if ( ! isset( $_POST['he_snips_nonce'] ) || ! wp_verify_nonce( $_POST['he_snips_nonce'], 'he_snips_save' ) ) {
-            wp_die( '보안 검사 실패. 다시 시도해 주세요.' );
-        }
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( '접근 권한이 없습니다.' );
-        }
-
-        $data = array(
-            'title'       => sanitize_text_field( $_POST['title'] ?? '' ),
-            'description' => sanitize_textarea_field( $_POST['description'] ?? '' ),
-            'code'        => wp_unslash( $_POST['code'] ?? '' ),
-            'type'        => sanitize_key( $_POST['type'] ?? 'php' ),
-            'js_position' => sanitize_key( $_POST['js_position'] ?? 'footer' ),
-            'active'      => ( isset( $_POST['active'] ) && $_POST['active'] === '1' ) ? 1 : 0,
-        );
-
-        $id = absint( $_POST['snippet_id'] ?? 0 );
-
-        if ( $id > 0 ) {
-            He_Snips_Snippets::update( $id, $data );
-            $message = 'updated';
-        } else {
-            He_Snips_Snippets::insert( $data );
-            $message = 'added';
-        }
-
-        wp_redirect( admin_url( 'options-general.php?page=he-snips&saved=' . $message ) );
-        exit;
-    }
-
     // =========================================================
     // Ajax: 토글
     // =========================================================
@@ -297,13 +307,10 @@ class He_Snips_Admin {
                                 </div>
 
                                 <div class="he-snips-snippet-actions">
-                                    <button class="he-snips-toggle-btn <?php echo $snippet->active ? 'is-on' : 'is-off'; ?>"
-                                            data-id="<?php echo absint( $snippet->id ); ?>"
-                                            title="<?php echo $snippet->active ? '클릭하여 비활성화' : '클릭하여 활성화'; ?>">
-                                        <span class="he-snips-toggle-track">
-                                            <span class="he-snips-toggle-thumb"></span>
-                                        </span>
-                                        <span class="he-snips-toggle-label"><?php echo $snippet->active ? '활성' : '비활성'; ?></span>
+                                    <button class="he-snips-pill-toggle <?php echo $snippet->active ? 'is-on' : 'is-off'; ?>"
+                                            data-id="<?php echo absint( $snippet->id ); ?>">
+                                        <span class="he-snips-label-current"><?php echo $snippet->active ? '활성' : '비활성'; ?></span>
+                                        <span class="he-snips-label-hover"><?php echo $snippet->active ? '비활성으로' : '활성으로'; ?></span>
                                     </button>
                                     <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=edit&id=' . $snippet->id ) ); ?>"
                                        class="he-snips-btn he-snips-btn-ghost he-snips-btn-sm">
