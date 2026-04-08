@@ -528,14 +528,17 @@
    ============================================================ */
 .he-snips-info-panel {
     margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .he-snips-info-panel-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     padding: 16px 20px !important;
-    align-items: end;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .he-snips-field-title,
@@ -543,6 +546,14 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
+    width: 100%;
+}
+
+.he-snips-field-title .he-snips-input,
+.he-snips-field-desc .he-snips-input,
+.he-snips-field-desc .he-snips-textarea {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* ============================================================

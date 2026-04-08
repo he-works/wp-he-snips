@@ -65,12 +65,21 @@ class He_Snips_Admin {
     // =========================================================
 
     public function register_menu() {
-        add_options_page(
-            'HE SNIPS',
-            'HE SNIPS',
-            'manage_options',
-            'he-snips',
-            array( $this, 'render_page' )
+        /*
+         * 1뎁스 최하단에 배치합니다.
+         * WordPress 기본 메뉴 position 값:
+         *   2=대시보드, 10=미디어, 20=페이지, 25=댓글, 60=외모, 65=플러그인,
+         *   70=사용자, 75=도구, 80=설정, 99=구분선
+         * 100 이상을 사용하면 "설정" 아래 최하단에 위치합니다.
+         */
+        add_menu_page(
+            'HE SNIPS',                    // 페이지 제목 (<title>)
+            'HE SNIPS',                    // 사이드바 메뉴 텍스트
+            'manage_options',              // 권한
+            'he-snips',                    // 메뉴 슬러그
+            array( $this, 'render_page' ), // 콜백
+            'data:image/svg+xml;base64,' . base64_encode( '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>' ),
+            100                            // position: 설정(80) 아래 최하단
         );
     }
 
@@ -416,9 +425,10 @@ class He_Snips_Admin {
                             <label class="he-snips-label" for="he-snips-description">
                                 설명 <span class="he-snips-optional">(선택)</span>
                             </label>
-                            <input type="text" id="he-snips-description" name="description"
-                                   value="<?php echo esc_attr( $snippet ? $snippet->description : '' ); ?>"
-                                   class="he-snips-input" placeholder="이 스니펫이 무엇을 하는지 설명하세요">
+                            <textarea id="he-snips-description" name="description"
+                                      class="he-snips-input he-snips-textarea"
+                                      rows="2"
+                                      placeholder="이 스니펫이 무엇을 하는지 설명하세요"><?php echo $description; ?></textarea>
                         </div>
                     </div>
                 </div>
