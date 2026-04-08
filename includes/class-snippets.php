@@ -95,7 +95,7 @@ class He_Snips_Snippets {
                 'code'        => $data['code'],  // 코드는 sanitize 하지 않음 (의도된 코드)
                 'type'        => in_array( $data['type'], array( 'php', 'js', 'css' ), true ) ? $data['type'] : 'php',
                 'js_position' => in_array( $data['js_position'] ?? 'footer', array( 'header', 'footer' ), true ) ? $data['js_position'] : 'footer',
-                'active'      => isset( $data['active'] ) ? 1 : 0,
+                'active'      => ! empty( $data['active'] ) ? 1 : 0,
             ),
             array( '%s', '%s', '%s', '%s', '%s', '%d' )
         );
@@ -122,7 +122,7 @@ class He_Snips_Snippets {
                 'code'        => $data['code'],
                 'type'        => in_array( $data['type'], array( 'php', 'js', 'css' ), true ) ? $data['type'] : 'php',
                 'js_position' => in_array( $data['js_position'] ?? 'footer', array( 'header', 'footer' ), true ) ? $data['js_position'] : 'footer',
-                'active'      => isset( $data['active'] ) ? 1 : 0,
+                'active'      => ! empty( $data['active'] ) ? 1 : 0,
             ),
             array( 'id' => absint( $id ) ),
             array( '%s', '%s', '%s', '%s', '%s', '%d' ),
