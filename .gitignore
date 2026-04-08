@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+*.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# WordPress
+wp-config.php
+
+# Logs
+*.log
+
+# Node
+node_modules/
+
+# Composer
+vendor/
