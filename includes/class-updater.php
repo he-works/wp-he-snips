@@ -188,7 +188,7 @@ class He_Snips_Updater {
         }
 
         return (object) array(
-            'name'          => 'He Snips',
+            'name'          => 'HE SNIPS',
             'slug'          => dirname( $this->plugin_file ),
             'version'       => ltrim( $release->tag_name, 'v' ),
             'author'        => '<a href="https://github.com/he-works">HE WORKS.</a>',

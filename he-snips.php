@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: He Snips
+ * Plugin Name: HE SNIPS
  * Plugin URI:  https://github.com/he-works/wp-he-snips
  * Description: PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 관리하세요.
  * Version:     1.0.0

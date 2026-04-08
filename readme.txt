@@ -1,4 +1,4 @@
-=== He Snips ===
+=== HE SNIPS ===
 Contributors: he-works
 Tags: snippets, code, php, javascript, css, functions
 Requires at least: 5.0
@@ -12,7 +12,7 @@ PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 
 
 == Description ==
 
-**He Snips**는 코드를 직접 테마 파일에 수정하지 않고, 관리자 페이지에서 PHP/JS/CSS 코드 스니펫을 손쉽게 관리할 수 있는 플러그인입니다.
+**HE SNIPS**는 코드를 직접 테마 파일에 수정하지 않고, 관리자 페이지에서 PHP/JS/CSS 코드 스니펫을 손쉽게 관리할 수 있는 플러그인입니다.
 
 = 주요 기능 =
 

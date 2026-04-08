@@ -11,16 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 class He_Snips_Admin {
 
     public function __construct() {
-        // 메뉴 등록
-        add_action( 'admin_menu', array( $this, 'register_menu' ) );
-
-        // CSS/JS 불러오기
+        add_action( 'admin_menu',            array( $this, 'register_menu' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-
-        // Ajax: 활성화 토글
         add_action( 'wp_ajax_he_snips_toggle', array( $this, 'ajax_toggle' ) );
-
-        // Ajax: 삭제
         add_action( 'wp_ajax_he_snips_delete', array( $this, 'ajax_delete' ) );
     }
 
@@ -30,11 +23,11 @@ class He_Snips_Admin {
 
     public function register_menu() {
         add_options_page(
-            'He Snips',           // 페이지 제목
-            'He Snips',           // 메뉴 제목
-            'manage_options',     // 권한 (관리자만)
-            'he-snips',           // 메뉴 슬러그
-            array( $this, 'render_page' ) // 출력 함수
+            'HE SNIPS',
+            'HE SNIPS',
+            'manage_options',
+            'he-snips',
+            array( $this, 'render_page' )
         );
     }
 
@@ -43,12 +36,10 @@ class He_Snips_Admin {
     // =========================================================
 
     public function enqueue_assets( $hook ) {
-        // He Snips 페이지에서만 로드
         if ( strpos( $hook, 'he-snips' ) === false ) {
             return;
         }
 
-        // 관리자 CSS
         wp_enqueue_style(
             'he-snips-admin',
             HE_SNIPS_URL . 'assets/css/admin.css',
@@ -56,7 +47,6 @@ class He_Snips_Admin {
             HE_SNIPS_VERSION
         );
 
-        // 관리자 JS
         wp_enqueue_script(
             'he-snips-admin',
             HE_SNIPS_URL . 'assets/js/admin.js',
@@ -65,18 +55,15 @@ class He_Snips_Admin {
             true
         );
 
-        // Ajax URL과 nonce를 JS에 전달
         wp_localize_script( 'he-snips-admin', 'heSnips', array(
             'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
             'nonce'     => wp_create_nonce( 'he_snips_nonce' ),
             'deleteMsg' => '이 스니펫을 정말 삭제하시겠습니까?',
         ) );
 
-        // 편집 페이지에서만 CodeMirror 로드
         if ( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'add', 'edit' ), true ) ) {
             $type = isset( $_GET['type'] ) ? sanitize_key( $_GET['type'] ) : 'php';
 
-            // 편집 중인 스니펫이 있으면 해당 타입으로
             if ( isset( $_GET['id'] ) ) {
                 $snippet = He_Snips_Snippets::get_one( absint( $_GET['id'] ) );
                 if ( $snippet ) {
@@ -88,11 +75,6 @@ class He_Snips_Admin {
         }
     }
 
-    /**
-     * WordPress 내장 CodeMirror를 불러옵니다.
-     *
-     * @param string $type 'php', 'js', 'css'
-     */
     private function enqueue_codemirror( $type ) {
         $mode_map = array(
             'php' => 'application/x-httpd-php',
@@ -104,7 +86,6 @@ class He_Snips_Admin {
             'type' => $mode_map[ $type ] ?? 'text/plain',
         ) );
 
-        // CodeMirror 초기화 스크립트
         if ( $settings ) {
             wp_add_inline_script(
                 'code-editor',
@@ -137,7 +118,6 @@ class He_Snips_Admin {
                 $this->render_editor_page( absint( $_GET['id'] ?? 0 ) );
                 break;
             default:
-                // 폼 저장 처리
                 if ( isset( $_POST['he_snips_save'] ) ) {
                     $this->handle_save();
                 }
@@ -151,7 +131,6 @@ class He_Snips_Admin {
     // =========================================================
 
     private function handle_save() {
-        // Nonce 검증
         if ( ! isset( $_POST['he_snips_nonce'] ) || ! wp_verify_nonce( $_POST['he_snips_nonce'], 'he_snips_save' ) ) {
             wp_die( '보안 검사 실패. 다시 시도해 주세요.' );
         }
@@ -166,7 +145,7 @@ class He_Snips_Admin {
             'code'        => wp_unslash( $_POST['code'] ?? '' ),
             'type'        => sanitize_key( $_POST['type'] ?? 'php' ),
             'js_position' => sanitize_key( $_POST['js_position'] ?? 'footer' ),
-            'active'      => isset( $_POST['active'] ) ? 1 : 0,
+            'active'      => ( isset( $_POST['active'] ) && $_POST['active'] === '1' ) ? 1 : 0,
         );
 
         $id = absint( $_POST['snippet_id'] ?? 0 );
@@ -198,7 +177,7 @@ class He_Snips_Admin {
         $result = He_Snips_Snippets::toggle_active( $id );
 
         if ( $result ) {
-            $snippet  = He_Snips_Snippets::get_one( $id );
+            $snippet = He_Snips_Snippets::get_one( $id );
             wp_send_json_success( array( 'active' => (int) $snippet->active ) );
         } else {
             wp_send_json_error( '처리 실패' );
@@ -233,99 +212,116 @@ class He_Snips_Admin {
     private function render_list_page() {
         $active_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'php';
         $tabs = array(
-            'php' => 'PHP',
-            'js'  => 'JavaScript',
-            'css' => 'CSS',
+            'php' => array( 'label' => 'PHP',        'hint' => 'functions.php 역할' ),
+            'js'  => array( 'label' => 'JavaScript',  'hint' => '헤더·푸터에 삽입' ),
+            'css' => array( 'label' => 'CSS',         'hint' => '전체 스타일 적용' ),
         );
         $snippets = He_Snips_Snippets::get_all( $active_tab );
         $saved    = isset( $_GET['saved'] ) ? sanitize_key( $_GET['saved'] ) : '';
         ?>
         <div class="wrap he-snips-wrap">
-            <h1 class="wp-heading-inline">
-                <span class="he-snips-logo">He Snips</span>
-            </h1>
-            <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>" class="page-title-action">
-                + 새 스니펫 추가
-            </a>
-            <hr class="wp-header-end">
+
+            <!-- 페이지 헤더 -->
+            <div class="he-snips-page-header">
+                <div class="he-snips-page-header-left">
+                    <div class="he-snips-logo-mark"><span>&lt;/&gt;</span></div>
+                    <div>
+                        <h1 class="he-snips-page-title">HE SNIPS</h1>
+                        <p class="he-snips-page-subtitle">코드 스니펫 관리자</p>
+                    </div>
+                </div>
+                <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
+                   class="he-snips-btn he-snips-btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    새 스니펫 추가
+                </a>
+            </div>
 
             <?php if ( $saved === 'added' ) : ?>
-                <div class="notice notice-success is-dismissible"><p>스니펫이 추가되었습니다.</p></div>
+                <div class="he-snips-alert he-snips-alert-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    스니펫이 추가되었습니다.
+                </div>
             <?php elseif ( $saved === 'updated' ) : ?>
-                <div class="notice notice-success is-dismissible"><p>스니펫이 수정되었습니다.</p></div>
+                <div class="he-snips-alert he-snips-alert-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    스니펫이 수정되었습니다.
+                </div>
             <?php endif; ?>
 
             <!-- 탭 -->
-            <nav class="nav-tab-wrapper he-snips-tabs">
-                <?php foreach ( $tabs as $slug => $label ) : ?>
+            <div class="he-snips-tab-nav">
+                <?php foreach ( $tabs as $slug => $info ) : ?>
                     <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&tab=' . $slug ) ); ?>"
-                       class="nav-tab <?php echo $active_tab === $slug ? 'nav-tab-active' : ''; ?>">
-                        <span class="he-snips-tab-badge he-snips-<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></span>
+                       class="he-snips-tab <?php echo $active_tab === $slug ? 'is-active' : ''; ?>">
+                        <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
+                        <span class="he-snips-tab-hint"><?php echo esc_html( $info['hint'] ); ?></span>
                     </a>
                 <?php endforeach; ?>
-            </nav>
+            </div>
 
             <!-- 스니펫 목록 -->
-            <div class="he-snips-list-container">
+            <div class="he-snips-card">
                 <?php if ( empty( $snippets ) ) : ?>
                     <div class="he-snips-empty">
-                        <p>아직 스니펫이 없습니다. <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>">첫 번째 스니펫을 추가해 보세요!</a></p>
+                        <div class="he-snips-empty-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        </div>
+                        <p class="he-snips-empty-title">스니펫이 없습니다</p>
+                        <p class="he-snips-empty-desc">첫 번째 스니펫을 추가해서 시작해 보세요.</p>
+                        <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
+                           class="he-snips-btn he-snips-btn-primary">
+                            + 새 스니펫 추가
+                        </a>
                     </div>
                 <?php else : ?>
-                    <table class="widefat he-snips-table">
-                        <thead>
-                            <tr>
-                                <th>제목</th>
-                                <?php if ( $active_tab === 'js' ) : ?>
-                                    <th>위치</th>
-                                <?php endif; ?>
-                                <th>상태</th>
-                                <th>수정일</th>
-                                <th>작업</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ( $snippets as $snippet ) : ?>
-                                <tr class="he-snips-row <?php echo $snippet->active ? 'is-active' : 'is-inactive'; ?>" data-id="<?php echo absint( $snippet->id ); ?>">
-                                    <td class="he-snips-title">
-                                        <strong><?php echo esc_html( $snippet->title ); ?></strong>
-                                        <?php if ( $snippet->description ) : ?>
-                                            <p class="he-snips-desc"><?php echo esc_html( $snippet->description ); ?></p>
-                                        <?php endif; ?>
-                                    </td>
-                                    <?php if ( $active_tab === 'js' ) : ?>
-                                        <td>
-                                            <span class="he-snips-position he-snips-position-<?php echo esc_attr( $snippet->js_position ); ?>">
-                                                <?php echo $snippet->js_position === 'header' ? '&lt;head&gt; 안' : '&lt;/body&gt; 앞'; ?>
+                    <div class="he-snips-snippet-list">
+                        <?php foreach ( $snippets as $snippet ) : ?>
+                            <div class="he-snips-snippet-item <?php echo $snippet->active ? 'is-active' : 'is-inactive'; ?>"
+                                 data-id="<?php echo absint( $snippet->id ); ?>">
+
+                                <div class="he-snips-snippet-info">
+                                    <div class="he-snips-snippet-meta">
+                                        <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $snippet->type ); ?>"><?php echo strtoupper( $snippet->type ); ?></span>
+                                        <?php if ( $snippet->type === 'js' ) : ?>
+                                            <span class="he-snips-pos-tag he-snips-pos-<?php echo esc_attr( $snippet->js_position ); ?>">
+                                                <?php echo $snippet->js_position === 'header' ? '&lt;head&gt;' : '&lt;/body&gt;'; ?>
                                             </span>
-                                        </td>
+                                        <?php endif; ?>
+                                        <span class="he-snips-snippet-date"><?php echo esc_html( date_i18n( 'Y.m.d', strtotime( $snippet->updated_at ) ) ); ?></span>
+                                    </div>
+                                    <strong class="he-snips-snippet-title"><?php echo esc_html( $snippet->title ); ?></strong>
+                                    <?php if ( $snippet->description ) : ?>
+                                        <p class="he-snips-snippet-desc"><?php echo esc_html( $snippet->description ); ?></p>
                                     <?php endif; ?>
-                                    <td>
-                                        <button class="he-snips-toggle button <?php echo $snippet->active ? 'button-primary' : 'button-secondary'; ?>"
-                                                data-id="<?php echo absint( $snippet->id ); ?>">
-                                            <?php echo $snippet->active ? '활성' : '비활성'; ?>
-                                        </button>
-                                    </td>
-                                    <td class="he-snips-date">
-                                        <?php echo esc_html( date_i18n( 'Y.m.d H:i', strtotime( $snippet->updated_at ) ) ); ?>
-                                    </td>
-                                    <td class="he-snips-actions">
-                                        <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=edit&id=' . $snippet->id ) ); ?>" class="button">
-                                            수정
-                                        </a>
-                                        <button class="he-snips-delete button button-link-delete"
-                                                data-id="<?php echo absint( $snippet->id ); ?>">
-                                            삭제
-                                        </button>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                </div>
+
+                                <div class="he-snips-snippet-actions">
+                                    <button class="he-snips-toggle-btn <?php echo $snippet->active ? 'is-on' : 'is-off'; ?>"
+                                            data-id="<?php echo absint( $snippet->id ); ?>"
+                                            title="<?php echo $snippet->active ? '클릭하여 비활성화' : '클릭하여 활성화'; ?>">
+                                        <span class="he-snips-toggle-track">
+                                            <span class="he-snips-toggle-thumb"></span>
+                                        </span>
+                                        <span class="he-snips-toggle-label"><?php echo $snippet->active ? '활성' : '비활성'; ?></span>
+                                    </button>
+                                    <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&action=edit&id=' . $snippet->id ) ); ?>"
+                                       class="he-snips-btn he-snips-btn-ghost he-snips-btn-sm">
+                                        수정
+                                    </a>
+                                    <button class="he-snips-btn he-snips-btn-danger he-snips-btn-sm he-snips-delete"
+                                            data-id="<?php echo absint( $snippet->id ); ?>">
+                                        삭제
+                                    </button>
+                                </div>
+
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
             </div>
 
-            <p class="he-snips-footer">He Snips by <strong>HE WORKS.</strong> &mdash; v<?php echo esc_html( HE_SNIPS_VERSION ); ?></p>
+            <p class="he-snips-footer">HE SNIPS by <strong>HE WORKS.</strong> &mdash; v<?php echo esc_html( HE_SNIPS_VERSION ); ?></p>
         </div>
         <?php
     }
@@ -348,93 +344,77 @@ class He_Snips_Admin {
             $type    = $snippet->type;
         }
 
-        $title       = $snippet ? esc_attr( $snippet->title )       : '';
+        $title       = $snippet ? esc_attr( $snippet->title )           : '';
         $description = $snippet ? esc_textarea( $snippet->description ) : '';
-        $code        = $snippet ? $snippet->code                     : '';
-        $active      = $snippet ? (bool) $snippet->active            : true;
-        $js_position = $snippet ? $snippet->js_position              : 'footer';
+        $code        = $snippet ? $snippet->code                         : '';
+        $active      = $snippet ? (bool) $snippet->active               : true;
+        $js_position = $snippet ? $snippet->js_position                  : 'footer';
+
+        $type_hints = array(
+            'php' => '&lt;?php 태그 없이 PHP 코드만 입력하세요. functions.php에 추가하는 것과 동일하게 동작합니다.',
+            'js'  => '&lt;script&gt; 태그 없이 순수 JavaScript 코드만 입력하세요.',
+            'css' => '&lt;style&gt; 태그 없이 순수 CSS 코드만 입력하세요.',
+        );
         ?>
         <div class="wrap he-snips-wrap">
-            <h1>
-                <span class="he-snips-logo">He Snips</span>
-                &mdash; <?php echo $is_edit ? '스니펫 수정' : '새 스니펫 추가'; ?>
-            </h1>
-            <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&tab=' . $type ) ); ?>" class="page-title-action">
-                ← 목록으로
-            </a>
-            <hr class="wp-header-end">
+
+            <!-- 페이지 헤더 -->
+            <div class="he-snips-page-header">
+                <div class="he-snips-page-header-left">
+                    <div class="he-snips-logo-mark"><span>&lt;/&gt;</span></div>
+                    <div>
+                        <h1 class="he-snips-page-title">HE SNIPS</h1>
+                        <p class="he-snips-page-subtitle"><?php echo $is_edit ? '스니펫 수정' : '새 스니펫 추가'; ?></p>
+                    </div>
+                </div>
+                <a href="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips&tab=' . $type ) ); ?>"
+                   class="he-snips-btn he-snips-btn-ghost">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    목록으로
+                </a>
+            </div>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'options-general.php?page=he-snips' ) ); ?>" id="he-snips-editor-form">
                 <?php wp_nonce_field( 'he_snips_save', 'he_snips_nonce' ); ?>
                 <input type="hidden" name="he_snips_save" value="1">
                 <input type="hidden" name="snippet_id" value="<?php echo absint( $id ); ?>">
+                <!-- 활성화 상태를 담는 hidden input (토글 버튼이 이 값을 변경) -->
+                <input type="hidden" name="active" id="he-snips-active-input" value="<?php echo $active ? '1' : '0'; ?>">
 
                 <div class="he-snips-editor-layout">
+
                     <!-- 왼쪽: 코드 에디터 -->
                     <div class="he-snips-editor-main">
-                        <div class="he-snips-editor-header">
-                            <span class="he-snips-type-badge he-snips-<?php echo esc_attr( $type ); ?>"><?php echo strtoupper( $type ); ?></span>
-                            <span class="he-snips-editor-hint">
-                                <?php
-                                if ( $type === 'php' ) echo 'functions.php에 추가하는 것과 동일하게 동작합니다. &lt;?php 태그 없이 입력하세요.';
-                                elseif ( $type === 'js' ) echo '&lt;script&gt; 태그 없이 순수 JavaScript만 입력하세요.';
-                                else echo '&lt;style&gt; 태그 없이 순수 CSS만 입력하세요.';
-                                ?>
-                            </span>
+                        <div class="he-snips-editor-topbar">
+                            <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $type ); ?>"><?php echo strtoupper( $type ); ?></span>
+                            <span class="he-snips-editor-hint"><?php echo $type_hints[ $type ]; ?></span>
                         </div>
-                        <textarea id="he-snips-code" name="code" rows="25" style="width:100%;font-family:monospace;"><?php echo esc_textarea( $code ); ?></textarea>
+                        <textarea id="he-snips-code" name="code" rows="28" style="width:100%;font-family:monospace;"><?php echo esc_textarea( $code ); ?></textarea>
                     </div>
 
-                    <!-- 오른쪽: 설정 패널 -->
+                    <!-- 오른쪽: 설정 사이드바 -->
                     <div class="he-snips-editor-sidebar">
 
-                        <!-- 저장 박스 -->
-                        <div class="postbox he-snips-box">
-                            <div class="postbox-header"><h2>저장</h2></div>
-                            <div class="inside">
-                                <label class="he-snips-active-label">
-                                    <input type="checkbox" name="active" value="1" <?php checked( $active ); ?>>
-                                    활성화
-                                </label>
-                                <button type="submit" class="button button-primary button-large" style="width:100%;margin-top:10px;">
-                                    <?php echo $is_edit ? '수정 저장' : '스니펫 추가'; ?>
-                                </button>
+                        <!-- 1. 코드 타입 -->
+                        <div class="he-snips-panel">
+                            <div class="he-snips-panel-header">
+                                <span class="he-snips-panel-title">코드 타입</span>
                             </div>
-                        </div>
-
-                        <!-- 기본 정보 박스 -->
-                        <div class="postbox he-snips-box">
-                            <div class="postbox-header"><h2>기본 정보</h2></div>
-                            <div class="inside">
-                                <label>
-                                    <span>제목 <span class="required">*</span></span>
-                                    <input type="text" name="title" value="<?php echo $title; ?>" class="widefat" required placeholder="스니펫 이름을 입력하세요">
-                                </label>
-                                <label style="margin-top:10px;display:block;">
-                                    <span>설명 (선택)</span>
-                                    <textarea name="description" class="widefat" rows="3" placeholder="이 스니펫이 무엇을 하는지 간단히 설명하세요"><?php echo $description; ?></textarea>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- 타입 설정 박스 -->
-                        <div class="postbox he-snips-box">
-                            <div class="postbox-header"><h2>코드 타입</h2></div>
-                            <div class="inside">
-                                <label class="he-snips-type-option <?php echo $type === 'php' ? 'selected' : ''; ?>">
+                            <div class="he-snips-panel-body">
+                                <label class="he-snips-type-option <?php echo $type === 'php' ? 'is-selected' : ''; ?>">
                                     <input type="radio" name="type" value="php" <?php checked( $type, 'php' ); ?> <?php echo $is_edit ? 'disabled' : ''; ?>>
-                                    <span class="he-snips-type-badge he-snips-php">PHP</span>
-                                    <small>functions.php 역할</small>
+                                    <span class="he-snips-badge he-snips-badge-php">PHP</span>
+                                    <span class="he-snips-type-desc">functions.php 역할</span>
                                 </label>
-                                <label class="he-snips-type-option <?php echo $type === 'js' ? 'selected' : ''; ?>">
+                                <label class="he-snips-type-option <?php echo $type === 'js' ? 'is-selected' : ''; ?>">
                                     <input type="radio" name="type" value="js" <?php checked( $type, 'js' ); ?> <?php echo $is_edit ? 'disabled' : ''; ?>>
-                                    <span class="he-snips-type-badge he-snips-js">JS</span>
-                                    <small>JavaScript 삽입</small>
+                                    <span class="he-snips-badge he-snips-badge-js">JS</span>
+                                    <span class="he-snips-type-desc">JavaScript 삽입</span>
                                 </label>
-                                <label class="he-snips-type-option <?php echo $type === 'css' ? 'selected' : ''; ?>">
+                                <label class="he-snips-type-option <?php echo $type === 'css' ? 'is-selected' : ''; ?>">
                                     <input type="radio" name="type" value="css" <?php checked( $type, 'css' ); ?> <?php echo $is_edit ? 'disabled' : ''; ?>>
-                                    <span class="he-snips-type-badge he-snips-css">CSS</span>
-                                    <small>스타일 삽입</small>
+                                    <span class="he-snips-badge he-snips-badge-css">CSS</span>
+                                    <span class="he-snips-type-desc">스타일 삽입</span>
                                 </label>
                                 <?php if ( $is_edit ) : ?>
                                     <input type="hidden" name="type" value="<?php echo esc_attr( $type ); ?>">
@@ -442,26 +422,79 @@ class He_Snips_Admin {
                             </div>
                         </div>
 
-                        <!-- JS 위치 설정 (JS 타입일 때만) -->
-                        <div class="postbox he-snips-box" id="he-snips-js-position-box" <?php echo $type !== 'js' ? 'style="display:none;"' : ''; ?>>
-                            <div class="postbox-header"><h2>JavaScript 삽입 위치</h2></div>
-                            <div class="inside">
-                                <label class="he-snips-position-option <?php echo $js_position === 'header' ? 'selected' : ''; ?>">
+                        <!-- 2. 기본 정보 (제목 + 설명) -->
+                        <div class="he-snips-panel">
+                            <div class="he-snips-panel-header">
+                                <span class="he-snips-panel-title">기본 정보</span>
+                            </div>
+                            <div class="he-snips-panel-body">
+                                <div class="he-snips-field">
+                                    <label class="he-snips-label" for="he-snips-title">
+                                        제목 <span class="he-snips-required">*</span>
+                                    </label>
+                                    <input type="text" id="he-snips-title" name="title" value="<?php echo $title; ?>"
+                                           class="he-snips-input" required placeholder="스니펫 이름을 입력하세요">
+                                </div>
+                                <div class="he-snips-field">
+                                    <label class="he-snips-label" for="he-snips-description">설명 <span class="he-snips-optional">(선택)</span></label>
+                                    <textarea id="he-snips-description" name="description" class="he-snips-input he-snips-textarea"
+                                              rows="3" placeholder="이 스니펫이 무엇을 하는지 설명하세요"><?php echo $description; ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. JavaScript 삽입 위치 (JS 타입일 때만) -->
+                        <div class="he-snips-panel" id="he-snips-js-position-box" <?php echo $type !== 'js' ? 'style="display:none;"' : ''; ?>>
+                            <div class="he-snips-panel-header">
+                                <span class="he-snips-panel-title">삽입 위치</span>
+                            </div>
+                            <div class="he-snips-panel-body">
+                                <label class="he-snips-position-option <?php echo $js_position === 'header' ? 'is-selected' : ''; ?>">
                                     <input type="radio" name="js_position" value="header" <?php checked( $js_position, 'header' ); ?>>
-                                    <strong>&lt;head&gt; 안 (Header)</strong>
-                                    <small>페이지 상단 &lt;/head&gt; 바로 앞에 삽입됩니다</small>
+                                    <div class="he-snips-position-text">
+                                        <strong>&lt;head&gt; 안</strong>
+                                        <small>페이지 상단에 삽입됩니다</small>
+                                    </div>
                                 </label>
-                                <label class="he-snips-position-option <?php echo $js_position !== 'header' ? 'selected' : ''; ?>">
+                                <label class="he-snips-position-option <?php echo $js_position !== 'header' ? 'is-selected' : ''; ?>">
                                     <input type="radio" name="js_position" value="footer" <?php checked( $js_position, 'footer' ); ?>>
-                                    <strong>&lt;/body&gt; 앞 (Footer)</strong>
-                                    <small>페이지 하단 &lt;/body&gt; 바로 앞에 삽입됩니다 (권장)</small>
+                                    <div class="he-snips-position-text">
+                                        <strong>&lt;/body&gt; 앞</strong>
+                                        <small>페이지 하단에 삽입됩니다 (권장)</small>
+                                    </div>
                                 </label>
+                            </div>
+                        </div>
+
+                        <!-- 4. 저장 -->
+                        <div class="he-snips-panel">
+                            <div class="he-snips-panel-header">
+                                <span class="he-snips-panel-title">저장</span>
+                            </div>
+                            <div class="he-snips-panel-body">
+                                <!-- 활성화 토글 버튼 -->
+                                <div class="he-snips-active-row">
+                                    <span class="he-snips-active-label-text">활성화</span>
+                                    <button type="button"
+                                            id="he-snips-active-btn"
+                                            class="he-snips-toggle-btn <?php echo $active ? 'is-on' : 'is-off'; ?>">
+                                        <span class="he-snips-toggle-track">
+                                            <span class="he-snips-toggle-thumb"></span>
+                                        </span>
+                                        <span class="he-snips-toggle-label"><?php echo $active ? '활성' : '비활성'; ?></span>
+                                    </button>
+                                </div>
+                                <button type="submit" class="he-snips-btn he-snips-btn-primary he-snips-btn-block">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                    <?php echo $is_edit ? '수정 저장' : '스니펫 추가'; ?>
+                                </button>
                             </div>
                         </div>
 
                     </div><!-- .he-snips-editor-sidebar -->
                 </div><!-- .he-snips-editor-layout -->
             </form>
+
         </div>
         <?php
     }

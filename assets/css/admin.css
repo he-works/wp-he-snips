@@ -1,198 +1,474 @@
 /* ============================================================
-   He Snips - 관리자 페이지 스타일
+   HE SNIPS — Admin Styles
+   Modern, clean design. Light backgrounds only.
    ============================================================ */
 
-/* 전체 래퍼 */
-.he-snips-wrap {
-    max-width: 1200px;
-}
-
-.he-snips-wrap h1 {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 23px;
-}
-
-/* 로고 텍스트 */
-.he-snips-logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: #1d2327;
-}
-
-.he-snips-logo::before {
-    content: "</>";
-    font-size: 16px;
-    color: #2271b1;
-    font-family: monospace;
+/* ============================================================
+   CSS 변수 (색상 팔레트)
+   ============================================================ */
+:root {
+    --hs-blue:        #4F6EF7;
+    --hs-blue-light:  #EEF1FE;
+    --hs-blue-hover:  #3B57E8;
+    --hs-green:       #22C55E;
+    --hs-green-light: #DCFCE7;
+    --hs-red:         #EF4444;
+    --hs-red-light:   #FEE2E2;
+    --hs-gray-50:     #F8F9FA;
+    --hs-gray-100:    #F1F3F5;
+    --hs-gray-200:    #E9ECEF;
+    --hs-gray-300:    #DEE2E6;
+    --hs-gray-400:    #ADB5BD;
+    --hs-gray-500:    #868E96;
+    --hs-gray-600:    #495057;
+    --hs-gray-700:    #343A40;
+    --hs-gray-900:    #212529;
+    --hs-radius:      8px;
+    --hs-radius-sm:   5px;
+    --hs-shadow:      0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --hs-shadow-md:   0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+    --hs-border:      #E9ECEF;
+    --hs-transition:  0.18s ease;
 }
 
 /* ============================================================
-   타입 뱃지 (PHP / JS / CSS)
+   전체 래퍼
    ============================================================ */
-.he-snips-php,
-.he-snips-js,
-.he-snips-css {
-    display: inline-block;
-    padding: 2px 8px;
+.he-snips-wrap {
+    max-width: 1160px;
+    padding-bottom: 40px;
+}
+
+/* WordPress 기본 h1 override */
+.he-snips-wrap .wp-heading-inline,
+.he-snips-wrap h1 {
+    display: none; /* 커스텀 헤더로 대체 */
+}
+
+/* ============================================================
+   페이지 헤더
+   ============================================================ */
+.he-snips-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: #fff;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--hs-radius);
+    margin: 16px 0 20px;
+    box-shadow: var(--hs-shadow);
+}
+
+.he-snips-page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.he-snips-logo-mark {
+    width: 42px;
+    height: 42px;
+    background: var(--hs-blue);
+    border-radius: var(--hs-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.he-snips-logo-mark span {
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+.he-snips-page-title {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: var(--hs-gray-900) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+}
+
+.he-snips-page-subtitle {
+    font-size: 12px;
+    color: var(--hs-gray-500);
+    margin: 2px 0 0;
+}
+
+/* ============================================================
+   알림 메시지
+   ============================================================ */
+.he-snips-alert {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--hs-radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.he-snips-alert-success {
+    background: var(--hs-green-light);
+    color: #166534;
+    border: 1px solid #BBF7D0;
+}
+
+/* ============================================================
+   버튼 시스템
+   ============================================================ */
+.he-snips-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--hs-radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+    transition: all var(--hs-transition);
+    white-space: nowrap;
+}
+
+.he-snips-btn-primary {
+    background: var(--hs-blue);
+    color: #fff !important;
+    border-color: var(--hs-blue);
+    box-shadow: 0 1px 2px rgba(79,110,247,.25);
+}
+
+.he-snips-btn-primary:hover {
+    background: var(--hs-blue-hover);
+    border-color: var(--hs-blue-hover);
+    color: #fff !important;
+}
+
+.he-snips-btn-ghost {
+    background: #fff;
+    color: var(--hs-gray-600) !important;
+    border-color: var(--hs-gray-300);
+}
+
+.he-snips-btn-ghost:hover {
+    background: var(--hs-gray-50);
+    border-color: var(--hs-gray-400);
+    color: var(--hs-gray-700) !important;
+}
+
+.he-snips-btn-danger {
+    background: #fff;
+    color: var(--hs-red) !important;
+    border-color: var(--hs-gray-300);
+}
+
+.he-snips-btn-danger:hover {
+    background: var(--hs-red-light);
+    border-color: var(--hs-red);
+    color: var(--hs-red) !important;
+}
+
+.he-snips-btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+.he-snips-btn-block {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 16px;
+}
+
+/* ============================================================
+   뱃지 (PHP / JS / CSS)
+   ============================================================ */
+.he-snips-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: 700;
-    font-family: monospace;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.4px;
+    line-height: 1;
 }
 
-.he-snips-php {
-    background: #8892bf;
-    color: #fff;
+.he-snips-badge-php {
+    background: #EEF0FB;
+    color: #4355B9;
 }
 
-.he-snips-js {
-    background: #f7df1e;
-    color: #333;
+.he-snips-badge-js {
+    background: #FEF9C3;
+    color: #854D0E;
 }
 
-.he-snips-css {
-    background: #264de4;
-    color: #fff;
+.he-snips-badge-css {
+    background: #DBEAFE;
+    color: #1D4ED8;
 }
 
 /* ============================================================
-   탭
+   탭 네비게이션
    ============================================================ */
-.he-snips-tabs {
-    margin-bottom: 0 !important;
-}
-
-.he-snips-tabs .nav-tab {
-    display: inline-flex;
-    align-items: center;
+.he-snips-tab-nav {
+    display: flex;
     gap: 6px;
+    margin-bottom: 12px;
 }
 
-/* ============================================================
-   목록 테이블
-   ============================================================ */
-.he-snips-list-container {
-    background: #fff;
-    border: 1px solid #c3c4c7;
-    border-top: none;
-}
-
-.he-snips-table {
-    border: none !important;
-    box-shadow: none !important;
-}
-
-.he-snips-table thead th {
-    background: #f6f7f7;
-    font-weight: 600;
-    padding: 12px 16px;
-    font-size: 13px;
-}
-
-.he-snips-table tbody td {
-    padding: 14px 16px;
-    vertical-align: middle;
-}
-
-/* 비활성 스니펫은 흐리게 */
-.he-snips-row.is-inactive td {
-    opacity: 0.55;
-}
-.he-snips-row.is-inactive .he-snips-toggle {
-    opacity: 1 !important;
-}
-
-.he-snips-row:hover td {
-    background: #f6f7f7;
-}
-
-.he-snips-title strong {
-    font-size: 14px;
-    display: block;
-    margin-bottom: 2px;
-}
-
-.he-snips-desc {
-    color: #646970;
-    font-size: 12px;
-    margin: 0;
-}
-
-.he-snips-date {
-    color: #646970;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-/* JS 위치 뱃지 */
-.he-snips-position {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 11px;
-    background: #f0f0f1;
-    color: #50575e;
-    font-family: monospace;
-}
-
-.he-snips-position-header {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.he-snips-position-footer {
-    background: #d1e7dd;
-    color: #0a3622;
-}
-
-/* 토글 버튼 */
-.he-snips-toggle {
-    min-width: 60px;
-    text-align: center;
-    transition: all 0.15s ease;
-}
-
-/* 삭제 버튼 */
-.he-snips-delete {
-    color: #b32d2e !important;
-    text-decoration: none !important;
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    cursor: pointer;
-    padding: 0 8px !important;
-    font-size: 13px;
-}
-
-.he-snips-delete:hover {
-    color: #6e2020 !important;
-    text-decoration: underline !important;
-}
-
-.he-snips-actions {
+.he-snips-tab {
     display: flex;
     align-items: center;
-    gap: 4px;
-    white-space: nowrap;
+    gap: 8px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--hs-radius-sm);
+    text-decoration: none !important;
+    color: var(--hs-gray-600) !important;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all var(--hs-transition);
+    box-shadow: var(--hs-shadow);
 }
 
-/* 빈 상태 */
-.he-snips-empty {
-    padding: 40px 20px;
-    text-align: center;
-    color: #646970;
+.he-snips-tab:hover {
+    border-color: var(--hs-blue);
+    color: var(--hs-blue) !important;
+    background: var(--hs-blue-light);
 }
 
-.he-snips-empty p {
+.he-snips-tab.is-active {
+    background: var(--hs-blue);
+    border-color: var(--hs-blue);
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(79,110,247,.3);
+}
+
+.he-snips-tab.is-active .he-snips-badge {
+    background: rgba(255,255,255,.2);
+    color: #fff;
+}
+
+.he-snips-tab-hint {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+/* ============================================================
+   카드 (목록 컨테이너)
+   ============================================================ */
+.he-snips-card {
+    background: #fff;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--hs-radius);
+    box-shadow: var(--hs-shadow);
+    overflow: hidden;
+}
+
+/* ============================================================
+   스니펫 목록 아이템
+   ============================================================ */
+.he-snips-snippet-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.he-snips-snippet-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--hs-gray-100);
+    transition: background var(--hs-transition);
+}
+
+.he-snips-snippet-item:last-child {
+    border-bottom: none;
+}
+
+.he-snips-snippet-item:hover {
+    background: var(--hs-gray-50);
+}
+
+.he-snips-snippet-item.is-inactive {
+    opacity: 0.5;
+}
+
+.he-snips-snippet-item.is-inactive:hover {
+    opacity: 0.75;
+}
+
+.he-snips-snippet-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.he-snips-snippet-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+}
+
+.he-snips-snippet-date {
+    font-size: 11px;
+    color: var(--hs-gray-400);
+    margin-left: 4px;
+}
+
+.he-snips-snippet-title {
+    display: block;
     font-size: 14px;
+    font-weight: 600;
+    color: var(--hs-gray-900);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.he-snips-snippet-desc {
+    font-size: 12px;
+    color: var(--hs-gray-500);
     margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* JS 위치 태그 */
+.he-snips-pos-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.he-snips-pos-header {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.he-snips-pos-footer {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+/* 액션 버튼 그룹 */
+.he-snips-snippet-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   토글 스위치
+   ============================================================ */
+.he-snips-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--hs-gray-500);
+    transition: color var(--hs-transition);
+}
+
+.he-snips-toggle-btn.is-on {
+    color: var(--hs-green);
+}
+
+.he-snips-toggle-track {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    background: var(--hs-gray-300);
+    border-radius: 10px;
+    transition: background var(--hs-transition);
+    flex-shrink: 0;
+}
+
+.he-snips-toggle-btn.is-on .he-snips-toggle-track {
+    background: var(--hs-green);
+}
+
+.he-snips-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    transition: transform var(--hs-transition);
+}
+
+.he-snips-toggle-btn.is-on .he-snips-toggle-thumb {
+    transform: translateX(16px);
+}
+
+.he-snips-toggle-label {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 30px;
+}
+
+/* ============================================================
+   빈 상태
+   ============================================================ */
+.he-snips-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 56px 24px;
+    text-align: center;
+}
+
+.he-snips-empty-icon {
+    width: 72px;
+    height: 72px;
+    background: var(--hs-gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--hs-gray-400);
+}
+
+.he-snips-empty-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--hs-gray-700);
+    margin: 0 0 6px;
+}
+
+.he-snips-empty-desc {
+    font-size: 13px;
+    color: var(--hs-gray-500);
+    margin: 0 0 20px;
 }
 
 /* ============================================================
@@ -200,201 +476,247 @@
    ============================================================ */
 .he-snips-editor-layout {
     display: grid;
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: 1fr 300px;
     gap: 20px;
-    margin-top: 20px;
     align-items: start;
 }
 
-/* 코드 에디터 영역 */
+/* 에디터 메인 (코드 입력 영역) */
 .he-snips-editor-main {
     background: #fff;
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--hs-radius);
+    box-shadow: var(--hs-shadow);
     overflow: hidden;
 }
 
-.he-snips-editor-header {
+/* 에디터 상단 바 — 밝은 배경 */
+.he-snips-editor-topbar {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
-    background: #1e1e2e;
-    border-bottom: 1px solid #333;
+    padding: 12px 16px;
+    background: var(--hs-gray-50);
+    border-bottom: 1px solid var(--hs-border);
 }
 
 .he-snips-editor-hint {
-    color: #888;
     font-size: 12px;
-    font-family: monospace;
+    color: var(--hs-gray-500);
+    font-family: 'Courier New', monospace;
+    line-height: 1.4;
 }
 
-.he-snips-editor-main textarea {
+/* 코드 textarea (CodeMirror 없을 때 폴백) */
+.he-snips-editor-main textarea#he-snips-code {
+    display: block;
+    width: 100% !important;
     border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     resize: vertical;
     font-family: 'Courier New', Courier, monospace;
     font-size: 13px;
-    line-height: 1.6;
-    background: #1e1e2e;
-    color: #cdd6f4;
+    line-height: 1.7;
+    background: #FAFAFA;
+    color: var(--hs-gray-900);
     padding: 16px;
+    box-sizing: border-box;
+    outline: none !important;
 }
 
-/* CodeMirror 컨테이너 스타일 덮어쓰기 */
+/* CodeMirror 컨테이너 */
 .he-snips-editor-main .CodeMirror {
-    height: 500px;
+    height: 520px;
     font-size: 13px;
     font-family: 'Courier New', Courier, monospace;
-    line-height: 1.6;
+    line-height: 1.7;
 }
 
 /* ============================================================
-   사이드바 박스
+   사이드바 패널
    ============================================================ */
 .he-snips-editor-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
-.he-snips-box {
-    margin: 0 !important;
+.he-snips-panel {
+    background: #fff;
+    border: 1px solid var(--hs-border);
+    border-radius: var(--hs-radius);
+    box-shadow: var(--hs-shadow);
+    overflow: hidden;
 }
 
-.he-snips-box .postbox-header {
-    border-bottom: 1px solid #c3c4c7;
+.he-snips-panel-header {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--hs-border);
+    background: var(--hs-gray-50);
 }
 
-.he-snips-box .postbox-header h2 {
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 14px;
+.he-snips-panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--hs-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
 }
 
-.he-snips-box .inside {
-    padding: 14px;
+.he-snips-panel-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.he-snips-box label {
-    display: block;
-    font-size: 13px;
+/* ============================================================
+   폼 필드
+   ============================================================ */
+.he-snips-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.he-snips-box label span {
-    display: block;
-    margin-bottom: 4px;
-    color: #50575e;
+.he-snips-label {
     font-size: 12px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    color: var(--hs-gray-600);
 }
 
-.he-snips-box .required {
-    color: #b32d2e;
+.he-snips-required {
+    color: var(--hs-red);
 }
 
-/* 활성화 체크박스 */
-.he-snips-active-label {
-    display: flex !important;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px !important;
-    cursor: pointer;
+.he-snips-optional {
+    font-weight: 400;
+    color: var(--hs-gray-400);
 }
 
-.he-snips-active-label input {
-    margin: 0;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
+.he-snips-input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid var(--hs-gray-300);
+    border-radius: var(--hs-radius-sm);
+    color: var(--hs-gray-900);
+    background: #fff;
+    transition: border-color var(--hs-transition), box-shadow var(--hs-transition);
+    box-sizing: border-box;
+    line-height: 1.5;
 }
 
-/* 타입 선택 */
+.he-snips-input:focus {
+    border-color: var(--hs-blue);
+    box-shadow: 0 0 0 3px rgba(79,110,247,.12);
+    outline: none;
+}
+
+.he-snips-textarea {
+    resize: vertical;
+    min-height: 72px;
+    font-family: inherit;
+}
+
+/* ============================================================
+   코드 타입 선택
+   ============================================================ */
 .he-snips-type-option {
     display: flex !important;
     align-items: center;
     gap: 10px;
-    padding: 10px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--hs-gray-200);
+    border-radius: var(--hs-radius-sm);
     cursor: pointer;
-    margin-bottom: 8px !important;
-    transition: border-color 0.15s ease;
-}
-
-.he-snips-type-option:last-child {
-    margin-bottom: 0 !important;
+    transition: all var(--hs-transition);
+    margin: 0 !important;
 }
 
 .he-snips-type-option:hover {
-    border-color: #2271b1;
+    border-color: var(--hs-blue);
+    background: var(--hs-blue-light);
 }
 
-.he-snips-type-option.selected,
-.he-snips-type-option:has(input:checked) {
-    border-color: #2271b1;
-    background: #f0f6fc;
+.he-snips-type-option.is-selected {
+    border-color: var(--hs-blue);
+    background: var(--hs-blue-light);
 }
 
 .he-snips-type-option input[type="radio"] {
     margin: 0;
+    accent-color: var(--hs-blue);
+    flex-shrink: 0;
 }
 
-.he-snips-type-option small {
-    display: block;
-    color: #646970;
-    font-size: 11px;
-    margin-top: 1px;
+.he-snips-type-desc {
+    font-size: 12px;
+    color: var(--hs-gray-500);
     flex: 1;
 }
 
-/* 비활성화된 타입 선택(수정 시) */
-.he-snips-type-option input[disabled] {
-    cursor: not-allowed;
-}
-
-/* JS 위치 선택 */
+/* ============================================================
+   JS 위치 선택
+   ============================================================ */
 .he-snips-position-option {
-    display: block !important;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 12px;
+    border: 1px solid var(--hs-gray-200);
+    border-radius: var(--hs-radius-sm);
     cursor: pointer;
-    margin-bottom: 8px !important;
-    transition: border-color 0.15s ease;
-}
-
-.he-snips-position-option:last-child {
-    margin-bottom: 0 !important;
+    transition: all var(--hs-transition);
+    margin: 0 !important;
 }
 
 .he-snips-position-option:hover {
-    border-color: #2271b1;
+    border-color: var(--hs-blue);
+    background: var(--hs-blue-light);
 }
 
-.he-snips-position-option.selected,
-.he-snips-position-option:has(input:checked) {
-    border-color: #2271b1;
-    background: #f0f6fc;
+.he-snips-position-option.is-selected {
+    border-color: var(--hs-blue);
+    background: var(--hs-blue-light);
 }
 
-.he-snips-position-option input {
-    margin-right: 8px;
+.he-snips-position-option input[type="radio"] {
+    margin: 3px 0 0;
+    accent-color: var(--hs-blue);
+    flex-shrink: 0;
 }
 
-.he-snips-position-option strong {
-    font-size: 13px;
-}
-
-.he-snips-position-option small {
+.he-snips-position-text strong {
     display: block;
-    color: #646970;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hs-gray-800, #2d3748);
+    font-family: 'Courier New', monospace;
+}
+
+.he-snips-position-text small {
     font-size: 11px;
-    margin-top: 4px;
-    padding-left: 20px;
+    color: var(--hs-gray-500);
+    margin-top: 2px;
+    display: block;
+}
+
+/* ============================================================
+   활성화 토글 행 (에디터 저장 패널)
+   ============================================================ */
+.he-snips-active-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.he-snips-active-label-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hs-gray-700);
 }
 
 /* ============================================================
@@ -402,13 +724,17 @@
    ============================================================ */
 .he-snips-footer {
     margin-top: 20px;
-    color: #646970;
-    font-size: 12px;
     text-align: right;
+    font-size: 11px;
+    color: var(--hs-gray-400);
+}
+
+.he-snips-footer strong {
+    color: var(--hs-gray-600);
 }
 
 /* ============================================================
-   반응형 (좁은 화면)
+   반응형
    ============================================================ */
 @media (max-width: 960px) {
     .he-snips-editor-layout {
@@ -417,5 +743,9 @@
 
     .he-snips-editor-sidebar {
         order: -1;
+    }
+
+    .he-snips-tab-hint {
+        display: none;
     }
 }
