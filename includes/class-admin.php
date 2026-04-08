@@ -389,7 +389,12 @@ class He_Snips_Admin {
                             <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $type ); ?>"><?php echo strtoupper( $type ); ?></span>
                             <span class="he-snips-editor-hint"><?php echo $type_hints[ $type ]; ?></span>
                         </div>
-                        <textarea id="he-snips-code" name="code" rows="28" style="width:100%;font-family:monospace;"><?php echo esc_textarea( $code ); ?></textarea>
+                        <div class="he-snips-editor-body">
+                            <textarea id="he-snips-code" name="code" rows="28" style="width:100%;font-family:monospace;"><?php echo esc_textarea( $code ); ?></textarea>
+                        </div>
+                        <div class="he-snips-resize-handle" title="드래그하여 높이 조절">
+                            <span class="he-snips-resize-grip"></span>
+                        </div>
                     </div>
 
                     <!-- 오른쪽: 설정 사이드바 -->

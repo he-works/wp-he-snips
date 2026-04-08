@@ -507,14 +507,21 @@
     line-height: 1.4;
 }
 
+/* 코드 에디터 본문 래퍼 */
+.he-snips-editor-body {
+    position: relative;
+    overflow: hidden;
+}
+
 /* 코드 textarea (CodeMirror 없을 때 폴백) */
 .he-snips-editor-main textarea#he-snips-code {
     display: block;
     width: 100% !important;
+    height: 100% !important;
     border: none !important;
     box-shadow: none !important;
     border-radius: 0 !important;
-    resize: vertical;
+    resize: none;
     font-family: 'Courier New', Courier, monospace;
     font-size: 13px;
     line-height: 1.7;
@@ -527,10 +534,44 @@
 
 /* CodeMirror 컨테이너 */
 .he-snips-editor-main .CodeMirror {
-    height: 520px;
+    height: 100%;
     font-size: 13px;
     font-family: 'Courier New', Courier, monospace;
     line-height: 1.7;
+}
+
+/* 크기 조절 핸들 */
+.he-snips-resize-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 14px;
+    background: var(--hs-gray-100);
+    border-top: 1px solid var(--hs-border);
+    cursor: ns-resize;
+    user-select: none;
+    transition: background var(--hs-transition);
+}
+
+.he-snips-resize-handle:hover {
+    background: var(--hs-gray-200);
+}
+
+.he-snips-resize-handle:active {
+    background: var(--hs-blue-light);
+}
+
+.he-snips-resize-grip {
+    display: block;
+    width: 36px;
+    height: 3px;
+    background: var(--hs-gray-300);
+    border-radius: 2px;
+    transition: background var(--hs-transition);
+}
+
+.he-snips-resize-handle:hover .he-snips-resize-grip {
+    background: var(--hs-blue);
 }
 
 /* ============================================================
@@ -731,6 +772,16 @@
 
 .he-snips-footer strong {
     color: var(--hs-gray-600);
+}
+
+/* 에디터 드래그 중 전체 페이지 텍스트 선택 방지 */
+body.he-snips-resizing {
+    cursor: ns-resize !important;
+    user-select: none !important;
+}
+
+body.he-snips-resizing * {
+    cursor: ns-resize !important;
 }
 
 /* ============================================================

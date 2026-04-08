@@ -5,12 +5,16 @@
 (function ($) {
     'use strict';
 
+    // 기본 에디터 높이 (px)
+    var DEFAULT_EDITOR_HEIGHT = 520;
+
     $(function () {
         initListToggle();
         initDelete();
         initTypeSelector();
         initJsPositionSelector();
         initEditorActiveBtn();
+        initEditorResize();
     });
 
     // =========================================================
@@ -141,6 +145,75 @@
             // hidden input 값 업데이트
             $('#he-snips-active-input').val(isNowOn ? '0' : '1');
         });
+    }
+
+    // =========================================================
+    // 편집기 페이지: 에디터 높이 드래그 조절
+    // =========================================================
+    function initEditorResize() {
+        var $handle = $('.he-snips-resize-handle');
+        if (!$handle.length) return;
+
+        var $body   = $('.he-snips-editor-body');
+        var MIN_H   = 200;
+        var MAX_H   = 1200;
+        var startY, startH;
+
+        // 저장된 높이 복원 (localStorage 사용)
+        var savedH = localStorage.getItem('heSnipsEditorH');
+        if (savedH) {
+            applyHeight(parseInt(savedH, 10));
+        } else {
+            applyHeight(DEFAULT_EDITOR_HEIGHT);
+        }
+
+        $handle.on('mousedown', function (e) {
+            startY = e.pageY;
+            startH = $body.outerHeight();
+
+            // 드래그 중 텍스트 선택 방지
+            $('body').addClass('he-snips-resizing');
+
+            $(document).on('mousemove.hsResize', function (e) {
+                var newH = Math.min(MAX_H, Math.max(MIN_H, startH + (e.pageY - startY)));
+                applyHeight(newH);
+            });
+
+            $(document).on('mouseup.hsResize', function () {
+                $(document).off('.hsResize');
+                $('body').removeClass('he-snips-resizing');
+                // 높이 저장
+                localStorage.setItem('heSnipsEditorH', $body.outerHeight());
+            });
+
+            e.preventDefault();
+        });
+
+        // 터치 지원 (태블릿)
+        $handle.on('touchstart', function (e) {
+            startY = e.originalEvent.touches[0].pageY;
+            startH = $body.outerHeight();
+
+            $(document).on('touchmove.hsResize', function (e) {
+                var newH = Math.min(MAX_H, Math.max(MIN_H, startH + (e.originalEvent.touches[0].pageY - startY)));
+                applyHeight(newH);
+                e.preventDefault();
+            });
+
+            $(document).on('touchend.hsResize', function () {
+                $(document).off('.hsResize');
+                localStorage.setItem('heSnipsEditorH', $body.outerHeight());
+            });
+        });
+
+        function applyHeight(h) {
+            $body.css('height', h + 'px');
+            // CodeMirror 인스턴스가 있으면 동기화
+            if (window.heSnipsEditor) {
+                window.heSnipsEditor.setSize(null, h);
+                window.heSnipsEditor.refresh();
+            }
+        }
     }
 
     // =========================================================
