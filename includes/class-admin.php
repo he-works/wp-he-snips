@@ -253,14 +253,19 @@ class He_Snips_Admin {
 
     private function render_list_page() {
         // #6: $_GET unslash
-        $active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'php';
+        $active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'all';
         $tabs = array(
-            'php' => array( 'label' => 'PHP',        'hint' => 'functions.php 역할' ),
+            'all' => array( 'label' => '전체',        'hint' => '모든 스니펫' ),
+            'php' => array( 'label' => 'PHP',         'hint' => 'functions.php 역할' ),
             'js'  => array( 'label' => 'JavaScript',  'hint' => '헤더·푸터에 삽입' ),
             'css' => array( 'label' => 'CSS',         'hint' => '전체 스타일 적용' ),
         );
-        $snippets = He_Snips_Snippets::get_all( $active_tab );
-        $saved    = isset( $_GET['saved'] ) ? sanitize_key( wp_unslash( $_GET['saved'] ) ) : '';
+        // 전체 탭이면 null(전체 조회), 나머지는 타입 필터
+        $filter_type = ( $active_tab === 'all' ) ? null : $active_tab;
+        $snippets    = He_Snips_Snippets::get_all( $filter_type );
+        $saved       = isset( $_GET['saved'] ) ? sanitize_key( wp_unslash( $_GET['saved'] ) ) : '';
+        // 새 스니펫 추가 버튼: 전체 탭에서는 php 기본값으로
+        $add_type = ( $active_tab === 'all' ) ? 'php' : $active_tab;
         ?>
         <div class="wrap he-snips-wrap">
 
@@ -272,7 +277,7 @@ class He_Snips_Admin {
                         <p class="he-snips-page-subtitle">코드 스니펫 관리자</p>
                     </div>
                 </div>
-                <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=add&type=' . $add_type ) ); ?>"
                    class="he-snips-btn he-snips-btn-primary">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     새 스니펫 추가
@@ -295,7 +300,11 @@ class He_Snips_Admin {
                 <?php foreach ( $tabs as $slug => $info ) : ?>
                     <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&tab=' . $slug ) ); ?>"
                        class="he-snips-tab <?php echo $active_tab === $slug ? 'is-active' : ''; ?>">
-                        <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
+                        <?php if ( $slug === 'all' ) : ?>
+                            <span class="he-snips-badge he-snips-badge-all"><?php echo esc_html( $info['label'] ); ?></span>
+                        <?php else : ?>
+                            <span class="he-snips-badge he-snips-badge-<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
+                        <?php endif; ?>
                         <span class="he-snips-tab-hint"><?php echo esc_html( $info['hint'] ); ?></span>
                     </a>
                 <?php endforeach; ?>
@@ -309,7 +318,7 @@ class He_Snips_Admin {
                         </div>
                         <p class="he-snips-empty-title">스니펫이 없습니다</p>
                         <p class="he-snips-empty-desc">첫 번째 스니펫을 추가해서 시작해 보세요.</p>
-                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=add&type=' . $active_tab ) ); ?>"
+                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=he-snips&action=add&type=' . $add_type ) ); ?>"
                            class="he-snips-btn he-snips-btn-primary">
                             + 새 스니펫 추가
                         </a>

@@ -3,7 +3,7 @@ Contributors: he-works
 Tags: snippets, code, php, javascript, css, functions
 Requires at least: 5.0
 Tested up to: 6.7
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -55,6 +55,12 @@ PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 
 
 == Changelog ==
 
+= 1.0.5 =
+* 플러그인 목록에 "설정" 바로가기 링크 추가 (플러그인 이름 아래 왼쪽)
+* 플러그인 목록에 "❤ 기부" 링크 추가 (설명 행 오른쪽, GitHub Sponsors 연결)
+* 스니펫 목록에 "전체" 탭 추가 — PHP/JS/CSS 구분 없이 모든 스니펫을 한 화면에서 확인 가능
+* 플러그인 최초 진입 시 기본 탭을 "전체"로 변경
+
 = 1.0.4 =
 * 관리자 페이지 내부 URL 수정 (options-general.php → admin.php) — 탭 이동, 저장 리다이렉트, 추가/수정 링크가 올바른 페이지로 연결
 * PHP 스니펫 에러 처리 강화 — ParseError뿐 아니라 모든 Throwable(TypeError, Error 등) 포괄 처리로 스니펫 오류 시 사이트 다운 방지
@@ -78,6 +84,9 @@ PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 
 * GitHub 자동 업데이트 지원
 
 == Upgrade Notice ==
+
+= 1.0.5 =
+플러그인 목록에 설정/기부 링크 추가, 스니펫 전체 목록 탭 추가.
 
 = 1.0.4 =
 관리자 페이지 URL 오류 수정 및 PHP 스니펫 에러 처리 강화. 업데이트를 강력히 권장합니다.
