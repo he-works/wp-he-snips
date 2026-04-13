@@ -3,7 +3,7 @@
  * Plugin Name: HE SNIPS
  * Plugin URI:  https://github.com/he-works/wp-he-snips
  * Description: PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 관리하세요.
- * Version:     1.0.5
+ * Version:     1.0.6
  * Author:      HE WORKS.
  * Author URI:  https://github.com/he-works
  * License:     GPL v2 or later
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // 플러그인 상수 정의
-define( 'HE_SNIPS_VERSION', '1.0.5' );
+define( 'HE_SNIPS_VERSION', '1.0.6' );
 define( 'HE_SNIPS_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'HE_SNIPS_URL',     plugin_dir_url( __FILE__ ) );
 define( 'HE_SNIPS_BASENAME', plugin_basename( __FILE__ ) );
@@ -33,6 +33,20 @@ require_once HE_SNIPS_DIR . 'includes/class-updater.php';
 
 // 플러그인 활성화 시: DB 테이블 생성
 register_activation_hook( __FILE__, array( 'He_Snips_Database', 'create_table' ) );
+
+// 이 플러그인 업데이트 완료 후 캐시 삭제 (다음 버전 체크를 즉시 반영)
+add_action( 'upgrader_process_complete', 'he_snips_on_upgrade', 10, 2 );
+
+function he_snips_on_upgrade( $upgrader, $hook_extra ) {
+    if (
+        isset( $hook_extra['action'], $hook_extra['type'], $hook_extra['plugins'] ) &&
+        $hook_extra['action'] === 'update' &&
+        $hook_extra['type']   === 'plugin' &&
+        in_array( HE_SNIPS_BASENAME, (array) $hook_extra['plugins'], true )
+    ) {
+        delete_transient( 'he_snips_update_cache' );
+    }
+}
 
 // 플러그인 초기화
 add_action( 'plugins_loaded', 'he_snips_init' );

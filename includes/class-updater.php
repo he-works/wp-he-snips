@@ -2,13 +2,14 @@
 /**
  * He Snips - GitHub 자동 업데이트 클래스
  *
- * GitHub 저장소의 최신 릴리스를 확인하고,
+ * GitHub 저장소의 최신 릴리스(또는 태그)를 확인하고,
  * 새 버전이 있으면 WordPress 업데이트 알림을 표시합니다.
  *
- * 사용 방법:
- *   1. GitHub에서 새 버전을 릴리스할 때 태그를 v1.0.1 형식으로 만드세요.
- *   2. 릴리스에 플러그인 zip 파일을 첨부하세요 (파일명: he-snips.zip).
- *   3. WordPress 관리자 → 업데이트 페이지에서 자동으로 감지됩니다.
+ * ▶ 사용 방법 (두 가지 중 하나):
+ *   A) GitHub에서 태그만 올리는 경우: git tag v1.0.5 → git push origin v1.0.5
+ *      → 태그 API에서 자동으로 새 버전을 감지합니다.
+ *   B) GitHub Release를 만드는 경우: 릴리스에 he-snips.zip을 첨부하면
+ *      더 정확한 업데이트 정보를 제공할 수 있습니다.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -29,8 +30,8 @@ class He_Snips_Updater {
     /** @var string GitHub API 응답 캐시 키 */
     private $cache_key = 'he_snips_update_cache';
 
-    /** @var int 캐시 유효 시간 (12시간) */
-    private $cache_ttl = 43200;
+    /** @var int 캐시 유효 시간 (6시간) */
+    private $cache_ttl = 21600;
 
     /**
      * @param string $repo           'he-works/wp-he-snips' 형식
@@ -42,74 +43,124 @@ class He_Snips_Updater {
         $this->plugin_file     = $plugin_file;
         $this->current_version = $current_version;
 
-        // WordPress 플러그인 업데이트 체크 필터에 연결
         add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_for_update' ) );
-
-        // 플러그인 정보 팝업 필터
-        add_filter( 'plugins_api', array( $this, 'plugin_info' ), 10, 3 );
-
-        // 업데이트 후 폴더명 정정
-        add_filter( 'upgrader_source_selection', array( $this, 'fix_source_dir' ), 10, 4 );
+        add_filter( 'plugins_api',                           array( $this, 'plugin_info' ), 10, 3 );
+        add_filter( 'upgrader_source_selection',             array( $this, 'fix_source_dir' ), 10, 4 );
     }
 
     // =========================================================
-    // GitHub에서 최신 릴리스 정보 가져오기
+    // GitHub API 공통 요청 인자
     // =========================================================
 
-    /**
-     * GitHub API를 통해 최신 릴리스 정보를 가져옵니다.
-     * 캐시를 사용하여 불필요한 API 호출을 줄입니다.
-     *
-     * @return object|false
-     */
-    private function get_latest_release() {
-        // 캐시 확인
-        $cached = get_transient( $this->cache_key );
-        if ( $cached !== false ) {
-            return $cached;
-        }
-
-        // GitHub API 호출
-        $api_url  = 'https://api.github.com/repos/' . $this->repo . '/releases/latest';
-        $response = wp_remote_get( $api_url, array(
+    private function get_request_args() {
+        return array(
             'timeout' => 10,
             'headers' => array(
                 'Accept'     => 'application/vnd.github.v3+json',
                 'User-Agent' => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url(),
             ),
-        ) );
+        );
+    }
 
-        // 오류 처리
-        if ( is_wp_error( $response ) ) {
-            return false;
+    // =========================================================
+    // GitHub에서 최신 버전 정보 가져오기
+    // =========================================================
+
+    /**
+     * 최신 버전 정보를 반환합니다.
+     * Releases → Tags 순서로 시도합니다.
+     *
+     * @return object|false
+     */
+    private function get_latest_release() {
+        $cached = get_transient( $this->cache_key );
+        if ( $cached !== false ) {
+            return $cached;
         }
 
-        $code = wp_remote_retrieve_response_code( $response );
-        if ( $code !== 200 ) {
-            return false;
+        // 1차 시도: GitHub Releases API
+        $release = $this->fetch_from_releases();
+
+        // 2차 시도: GitHub Tags API (Release 없이 태그만 올린 경우)
+        if ( ! $release ) {
+            $release = $this->fetch_from_tags();
         }
 
-        $body    = wp_remote_retrieve_body( $response );
-        $release = json_decode( $body );
-
-        if ( ! isset( $release->tag_name ) ) {
-            return false;
+        if ( $release ) {
+            set_transient( $this->cache_key, $release, $this->cache_ttl );
         }
-
-        // 캐시 저장
-        set_transient( $this->cache_key, $release, $this->cache_ttl );
 
         return $release;
     }
 
     /**
-     * 릴리스에서 zip 파일 다운로드 URL을 가져옵니다.
+     * GitHub Releases API에서 최신 릴리스를 가져옵니다.
+     * (GitHub 저장소 → Releases 탭에 릴리스가 있는 경우)
+     *
+     * @return object|false
+     */
+    private function fetch_from_releases() {
+        $url      = 'https://api.github.com/repos/' . $this->repo . '/releases/latest';
+        $response = wp_remote_get( $url, $this->get_request_args() );
+
+        if ( is_wp_error( $response ) ) {
+            return false;
+        }
+        if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            return false;
+        }
+
+        $release = json_decode( wp_remote_retrieve_body( $response ) );
+
+        if ( ! isset( $release->tag_name ) ) {
+            return false;
+        }
+
+        return $release;
+    }
+
+    /**
+     * GitHub Tags API에서 최신 태그를 가져옵니다.
+     * (git tag → git push 만 한 경우에도 감지 가능)
+     *
+     * @return object|false
+     */
+    private function fetch_from_tags() {
+        $url      = 'https://api.github.com/repos/' . $this->repo . '/tags';
+        $response = wp_remote_get( $url, $this->get_request_args() );
+
+        if ( is_wp_error( $response ) ) {
+            return false;
+        }
+        if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            return false;
+        }
+
+        $tags = json_decode( wp_remote_retrieve_body( $response ) );
+
+        if ( empty( $tags ) || ! isset( $tags[0]->name ) ) {
+            return false;
+        }
+
+        // 태그 정보를 릴리스 형식으로 변환
+        $tag = $tags[0];
+        return (object) array(
+            'tag_name'     => $tag->name,
+            'zipball_url'  => $tag->zipball_url,
+            'assets'       => array(),
+            'body'         => '',
+            'published_at' => '',
+        );
+    }
+
+    /**
+     * 릴리스에서 zip 파일 다운로드 URL을 반환합니다.
+     * 릴리스에 첨부된 .zip 파일 → 없으면 소스 zipball 사용
      *
      * @param object $release
      * @return string|false
      */
     private function get_zip_url( $release ) {
-        // 첨부 파일(asset) 중 .zip 파일 찾기
         if ( ! empty( $release->assets ) ) {
             foreach ( $release->assets as $asset ) {
                 if ( substr( $asset->name, -4 ) === '.zip' ) {
@@ -117,8 +168,6 @@ class He_Snips_Updater {
                 }
             }
         }
-
-        // asset이 없으면 소스코드 zip 사용
         return $release->zipball_url ?? false;
     }
 
@@ -142,7 +191,6 @@ class He_Snips_Updater {
             return $transient;
         }
 
-        // 버전 비교 (태그에서 'v' 접두사 제거)
         $latest_version = ltrim( $release->tag_name, 'v' );
 
         if ( version_compare( $this->current_version, $latest_version, '<' ) ) {
@@ -188,15 +236,15 @@ class He_Snips_Updater {
         }
 
         return (object) array(
-            'name'          => 'HE SNIPS',
-            'slug'          => dirname( $this->plugin_file ),
-            'version'       => ltrim( $release->tag_name, 'v' ),
-            'author'        => '<a href="https://github.com/he-works">HE WORKS.</a>',
-            'homepage'      => 'https://github.com/' . $this->repo,
+            'name'              => 'HE SNIPS',
+            'slug'              => dirname( $this->plugin_file ),
+            'version'           => ltrim( $release->tag_name, 'v' ),
+            'author'            => '<a href="https://github.com/he-works">HE WORKS.</a>',
+            'homepage'          => 'https://github.com/' . $this->repo,
             'short_description' => 'PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 관리하세요.',
-            'sections'      => array(
-                'description'  => $release->body ?? '최신 릴리스입니다.',
-                'changelog'    => $release->body ?? '',
+            'sections'          => array(
+                'description' => $release->body ?? '최신 릴리스입니다.',
+                'changelog'   => $release->body ?? '',
             ),
             'download_link' => $this->get_zip_url( $release ),
             'requires'      => '5.0',
@@ -209,25 +257,39 @@ class He_Snips_Updater {
     /**
      * GitHub에서 다운로드한 zip을 압축 해제하면 폴더명이
      * 'he-works-wp-he-snips-abc123' 같은 형태가 됩니다.
-     * 올바른 폴더명(plugin-He-Snips)으로 교정합니다.
+     * 올바른 플러그인 폴더명으로 교정합니다.
      *
      * @param string $source       압축 해제된 폴더 경로
-     * @param string $remote_source
+     * @param string $remote_source 임시 디렉토리 경로
      * @param object $upgrader
      * @param array  $hook_extra
      * @return string
      */
     public function fix_source_dir( $source, $remote_source, $upgrader, $hook_extra = array() ) {
-        // 이 플러그인 업데이트인지 확인
+        // 이 플러그인 업데이트가 아니면 통과
         if ( ! isset( $hook_extra['plugin'] ) || $hook_extra['plugin'] !== $this->plugin_file ) {
+            return $source;
+        }
+
+        global $wp_filesystem;
+        if ( ! $wp_filesystem ) {
             return $source;
         }
 
         $correct_name = dirname( $this->plugin_file ); // 'plugin-He-Snips'
         $new_source   = trailingslashit( $remote_source ) . $correct_name . '/';
 
-        global $wp_filesystem;
-        if ( $wp_filesystem && $wp_filesystem->move( $source, $new_source ) ) {
+        // 이미 올바른 폴더명이면 그대로 반환
+        if ( trailingslashit( $source ) === $new_source ) {
+            return $source;
+        }
+
+        // 목적지에 이미 같은 이름의 폴더가 있으면 제거
+        if ( $wp_filesystem->exists( $new_source ) ) {
+            $wp_filesystem->delete( $new_source, true );
+        }
+
+        if ( $wp_filesystem->move( $source, $new_source ) ) {
             return $new_source;
         }
 
@@ -235,7 +297,8 @@ class He_Snips_Updater {
     }
 
     /**
-     * 캐시를 강제로 지웁니다. (새로고침할 때 유용)
+     * 캐시를 강제로 지웁니다.
+     * 관리자 → 업데이트 페이지에서 "지금 확인"을 눌러도 지워집니다.
      */
     public static function clear_cache() {
         delete_transient( 'he_snips_update_cache' );
