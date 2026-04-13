@@ -3,7 +3,7 @@ Contributors: he-works
 Tags: snippets, code, php, javascript, css, functions
 Requires at least: 5.0
 Tested up to: 6.7
-Stable tag: 1.0.0
+Stable tag: 1.0.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -27,7 +27,7 @@ PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 
 = 사용 방법 =
 
 1. 플러그인 활성화
-2. 설정 → He Snips 이동
+2. 사이드바 → HE SNIPS 이동
 3. 탭에서 PHP / JS / CSS 선택
 4. "새 스니펫 추가" 버튼 클릭
 5. 코드 입력 후 저장
@@ -36,7 +36,7 @@ PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 
 
 1. `plugin-He-Snips` 폴더를 `/wp-content/plugins/` 디렉토리에 업로드하세요.
 2. 워드프레스 관리자 → 플러그인에서 "He Snips"를 활성화하세요.
-3. 설정 → He Snips에서 스니펫을 관리하세요.
+3. 사이드바 → HE SNIPS에서 스니펫을 관리하세요.
 
 == Frequently Asked Questions ==
 
@@ -55,12 +55,32 @@ PHP, JavaScript, CSS 코드 스니펫을 워드프레스에 쉽게 삽입하고 
 
 == Changelog ==
 
+= 1.0.4 =
+* 관리자 페이지 내부 URL 수정 (options-general.php → admin.php) — 탭 이동, 저장 리다이렉트, 추가/수정 링크가 올바른 페이지로 연결
+* PHP 스니펫 에러 처리 강화 — ParseError뿐 아니라 모든 Throwable(TypeError, Error 등) 포괄 처리로 스니펫 오류 시 사이트 다운 방지
+* PHP 스니펫 에러 발생 시 error_log 기록 추가 (프론트엔드 디버깅 지원)
+* readme.txt 버전 및 메뉴 경로 안내 수정
+
+= 1.0.3 =
+* 관리자 UI 개선
+* CodeMirror 에디터 안정화
+
+= 1.0.2 =
+* 에디터 레이아웃 개선
+* 코드 타입별 구문 강조 최적화
+
+= 1.0.1 =
+* 버그 수정 및 안정성 개선
+
 = 1.0.0 =
 * 최초 릴리스
 * PHP, JS, CSS 스니펫 관리
 * GitHub 자동 업데이트 지원
 
 == Upgrade Notice ==
+
+= 1.0.4 =
+관리자 페이지 URL 오류 수정 및 PHP 스니펫 에러 처리 강화. 업데이트를 강력히 권장합니다.
 
 = 1.0.0 =
 최초 릴리스입니다.
